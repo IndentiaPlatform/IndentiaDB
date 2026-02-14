@@ -914,65 +914,65 @@ result = es.search(
 
 ## Vergelijking met Alternatieven
 
-| Feature | IndentiaDB | QLever (C++) | Oxigraph | Blazegraph | Apache Jena | MarkLogic | ArangoDB |
-|---------|---------------|--------------|----------|------------|-------------|-----------|----------|
-| **Taal** | Rust 🦀 | C++ | Rust 🦀 | Java ☕ | Java ☕ | C++ | C++ |
-| **Memory Safety** | ✅ | ❌ | ✅ | ✅ (GC) | ✅ (GC) | ❌ | ❌ |
-| **Clustering** | ✅ Raft | ❌ | ❌ | ✅ | Limited | ✅ | ✅ CP master/master |
-| **Dual Storage** | ✅ SurrealDB/TiKV | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ (RocksDB) |
-| **Multi-Modal** | ✅ RDF+JSON+ES | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ Doc+Graph+KV+Search |
-| **SPARQL 1.1** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ (AQL) |
-| **SPARQL 1.2 (WD Jan 29)** | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **RDF 1.2 Triple Terms** | ✅ | Partial | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **Property Paths** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Graph Traversals) |
-| **GeoSPARQL** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ (GeoJSON native) |
-| **Full-Text Search** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ ArangoSearch |
-| **Federated Queries** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ (SmartGraphs) |
-| **SPARQL UPDATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Vector Search** | ✅ IVF (ArangoDB port) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ FAISS |
-| **6 Permutaties** | ✅ | ✅ | ❌ (2) | Variable | Variable | N/A | N/A |
-| **QLever Index Compat** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **RAG Optimized** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ HybridGraphRAG |
-| **ES Compatibility** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Kibana Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Bitemporal** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **RDFS/OWL Reasoning** | ✅ | ❌ | ❌ | ✅ | ✅ | Partial | ❌ |
-| **Real-time Events** | ✅ LIVE | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ CDC/Streaming |
-| **K8s Operator** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ kube-arangodb |
-| **WASM Support** | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Licentie** | TBD | Open | Open | Open | Open | Proprietary | BSL 1.1 |
-| **Performance** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Maturity** | Beta | Production | Production | Production | Production | Production | Production |
+| Feature | IndentiaDB | QLever (C++) | Oxigraph | Blazegraph | Apache Jena | MarkLogic | ArangoDB | PostgreSQL | SQL Server | Oracle |
+|---------|---------------|--------------|----------|------------|-------------|-----------|----------|------------|------------|--------|
+| **Taal** | Rust 🦀 | C++ | Rust 🦀 | Java ☕ | Java ☕ | C++ | C++ | C | C/C++ | C/C++ |
+| **Memory Safety** | ✅ | ❌ | ✅ | ✅ (GC) | ✅ (GC) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Clustering** | ✅ Raft | ❌ | ❌ | ✅ | Limited | ✅ | ✅ CP master/master | ✅ Patroni/Citus | ✅ Always On AG | ✅ RAC |
+| **Dual Storage** | ✅ SurrealDB/TiKV | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ (RocksDB) | ❌ | ❌ | ❌ |
+| **Multi-Modal** | ✅ RDF+JSON+ES | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ Doc+Graph+KV+Search | ✅ (via extensies) | Partial (Rel+Graph) | ✅ Rel+Graph+RDF+JSON |
+| **SPARQL 1.1** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ (AQL) | ❌ (via Ontop/FDW) | ❌ | ✅ |
+| **SPARQL 1.2 (WD Jan 29)** | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **RDF 1.2 Triple Terms** | ✅ | Partial | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Property Paths** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Graph Traversals) | ✅ (AGE/Cypher) | Partial (MATCH) | ✅ |
+| **GeoSPARQL** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ (GeoJSON native) | ❌ (PostGIS) | ❌ (Spatial types) | Partial (Spatial+RDF) |
+| **Full-Text Search** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ ArangoSearch | ✅ Native + BM25 | ✅ Native | ✅ Oracle Text |
+| **Federated Queries** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ❌ (SmartGraphs) | ✅ FDW | ✅ Linked Servers | ✅ DB Links |
+| **SPARQL UPDATE** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ (sinds 12.2) |
+| **Vector Search** | ✅ IVF (ArangoDB port) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ FAISS | ✅ pgvector | ✅ DiskANN | ✅ HNSW+IVF |
+| **6 Permutaties** | ✅ | ✅ | ❌ (2) | Variable | Variable | N/A | N/A | N/A | N/A | N/A |
+| **QLever Index Compat** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **RAG Optimized** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ HybridGraphRAG | Partial (pgvector) | Partial (Vector) | ✅ AI Vector Search |
+| **ES Compatibility** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Kibana Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Bitemporal** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | Partial (Temporal Tables) | ✅ Flashback+Validity |
+| **RDFS/OWL Reasoning** | ✅ | ❌ | ❌ | ✅ | ✅ | Partial | ❌ | ❌ | ❌ | ✅ (OWL subset) |
+| **Real-time Events** | ✅ LIVE | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ CDC/Streaming | ✅ LISTEN/NOTIFY | ✅ CDC/Change Tracking | ✅ Streams/CDC |
+| **K8s Operator** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ kube-arangodb | ✅ CloudNativePG | Partial (Azure Arc) | ✅ Oracle Operator |
+| **WASM Support** | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Licentie** | TBD | Open | Open | Open | Open | Proprietary | BSL 1.1 | PostgreSQL (Open) | Proprietary | Proprietary |
+| **Performance** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Maturity** | Beta | Production | Production | Production | Production | Production | Production | Production | Production | Production |
 
 ### 🔐 Security Features Vergelijking
 
-| Security Feature | IndentiaDB | QLever (C++) | Oxigraph | Blazegraph | Apache Jena | MarkLogic | ArangoDB |
-|------------------|---------------|--------------|----------|------------|-------------|-----------|----------|
-| **LDAP Authenticatie** | ✅ | ❌ | ❌ | ❌ | ✅ (Shiro) | ✅ | ✅ (Enterprise) |
-| **OIDC/OAuth2** | ✅ | ❌ | ❌ | ❌ | ✅ (Plugin) | ✅ | ✅ (JWT/OAuth2) |
-| **JWT Tokens** | ✅ | ❌ | ❌ | ❌ | ✅ (Plugin) | ✅ | ✅ |
-| **HTTP Basic Auth** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **RBAC** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Graph-Level ACL** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ (Collection) |
-| **Triple-Level ACL** | ✅ (SIDs) | ❌ | ❌ | ❌ | Partial | ✅ | ❌ |
-| **Windows SID Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **Rate Limiting** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **Audit Logging** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ (Enterprise) |
-| **Connection Pooling** | ✅ | N/A | N/A | ✅ | ✅ | ✅ | ✅ |
-| **FROM Clause Filtering** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | N/A |
-| **RDF-star Security** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **X-Pack Compatible** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Security Feature | IndentiaDB | QLever (C++) | Oxigraph | Blazegraph | Apache Jena | MarkLogic | ArangoDB | PostgreSQL | SQL Server | Oracle |
+|------------------|---------------|--------------|----------|------------|-------------|-----------|----------|------------|------------|--------|
+| **LDAP Authenticatie** | ✅ | ❌ | ❌ | ❌ | ✅ (Shiro) | ✅ | ✅ (Enterprise) | ✅ | ✅ (AD) | ✅ |
+| **OIDC/OAuth2** | ✅ | ❌ | ❌ | ❌ | ✅ (Plugin) | ✅ | ✅ (JWT/OAuth2) | ✅ (via ext) | ✅ (Entra ID) | ✅ (OCI IAM) |
+| **JWT Tokens** | ✅ | ❌ | ❌ | ❌ | ✅ (Plugin) | ✅ | ✅ | ❌ | ✅ | ✅ |
+| **HTTP Basic Auth** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **RBAC** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Graph-Level ACL** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ (Collection) | ❌ (Schema) | ❌ (Schema) | ✅ (Named Graph) |
+| **Triple-Level ACL** | ✅ (SIDs) | ❌ | ❌ | ❌ | Partial | ✅ | ❌ | ❌ (RLS) | ❌ (RLS) | ✅ (VPD/RAS) |
+| **Windows SID Support** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| **Rate Limiting** | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ (via ext) | ✅ (Resource Gov) | ✅ (Resource Mgr) |
+| **Audit Logging** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ (Enterprise) | ✅ (pgAudit) | ✅ | ✅ |
+| **Connection Pooling** | ✅ | N/A | N/A | ✅ | ✅ | ✅ | ✅ | ✅ (PgBouncer) | ✅ | ✅ |
+| **FROM Clause Filtering** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | N/A | N/A | N/A | ✅ (Named Graph) |
+| **RDF-star Security** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **X-Pack Compatible** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 ### 💰 Pricing Vergelijking
 
-| Aspect | IndentiaDB | MarkLogic | Neo4j Enterprise | AWS Neptune | ArangoDB |
-|--------|---------------|-----------|------------------|-------------|----------|
-| **Model** | TBD | Proprietary | Proprietary | Cloud Service | BSL 1.1 / Enterprise |
-| **Licentie** | TBD | Per Core | Per Core | Pay-per-use | BSL 1.1 (Community), Proprietary (Enterprise) |
-| **Entry Cost** | €0 | €€€€€ | €€€€ | Variable | €0 (Community, ≤100 GiB) |
-| **Self-hosted** | ✅ | ✅ | ✅ | ❌ | ✅ |
-| **Cloud Managed** | 🔜 | ✅ | ✅ | ✅ | ✅ (ArangoGraph) |
-| **Support** | Community + Enterprise | Enterprise only | Enterprise only | AWS Support | Community + Enterprise |
+| Aspect | IndentiaDB | MarkLogic | Neo4j Enterprise | AWS Neptune | ArangoDB | PostgreSQL | SQL Server | Oracle |
+|--------|---------------|-----------|------------------|-------------|----------|------------|------------|--------|
+| **Model** | TBD | Proprietary | Proprietary | Cloud Service | BSL 1.1 / Enterprise | Open Source | Proprietary | Proprietary |
+| **Licentie** | TBD | Per Core | Per Core | Pay-per-use | BSL 1.1 (Community), Proprietary (Enterprise) | PostgreSQL License | Per Core / CAL | Per Processor / NUP |
+| **Entry Cost** | €0 | €€€€€ | €€€€ | Variable | €0 (Community, ≤100 GiB) | €0 | €0 (Express) | €0 (XE/Free) |
+| **Self-hosted** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Cloud Managed** | 🔜 | ✅ | ✅ | ✅ | ✅ (ArangoGraph) | ✅ (RDS/Aurora/Supabase) | ✅ (Azure SQL) | ✅ (OCI/Autonomous) |
+| **Support** | Community + Enterprise | Enterprise only | Enterprise only | AWS Support | Community + Enterprise | Community + EDB/Crunchy | Microsoft Support | Oracle Support |
 
 ---
 
