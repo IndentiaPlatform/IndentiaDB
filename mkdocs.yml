@@ -7,6 +7,8 @@ edit_uri: ""
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
     - scheme: slate
       primary: indigo
@@ -38,8 +40,6 @@ theme:
     - search.suggest
     - search.share
     - toc.follow
-  logo: img/logo.png
-  favicon: img/favicon.png
   icon:
     repo: fontawesome/brands/github
 
@@ -110,6 +110,7 @@ nav:
   - Features:
     - features/index.md
     - Enterprise Search: features/enterprise-search.md
+    - Bayesian BM25 (BB25): features/bayesian-bm25.md
     - Vector Search & RAG: features/vector-search.md
     - Live Queries & Events: features/live-queries.md
     - Federated Queries: features/federation.md
