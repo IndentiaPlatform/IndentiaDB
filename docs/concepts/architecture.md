@@ -57,7 +57,7 @@ SurrealDB is embedded directly into the IndentiaDB process. No separate database
 
 ### Option B: TiKV Distributed
 
-TiKV is an external distributed key-value store based on the Raft consensus protocol, developed by PingCAP. IndentiaDB connects to an existing TiKV cluster as its storage backend.
+TiKV is an external distributed key-value store based on the Raft consensus protocol, developed by PingCAP. IndentiaDB connects to an existing TiKV cluster as its storage backend via SurrealDB's `kv-tikv` driver.
 
 **Characteristics:**
 
@@ -68,6 +68,99 @@ TiKV is an external distributed key-value store based on the Raft consensus prot
 - High availability: yes (3+ TiKV nodes required for quorum)
 - LIVE queries: not available (TiKV does not support push notifications)
 - Operational complexity: high (requires TiKV cluster + PD + TiFlash for analytics)
+
+#### TiKV Cluster Topology
+
+A TiKV deployment consists of two components:
+
+```
+┌──────────────────────────────────┐
+│   PD (Placement Driver) × 3      │
+│   pd-0, pd-1, pd-2               │
+│   ─────────────────────────────  │
+│   • Raft quorum for metadata     │
+│   • Cluster topology coordinator │
+│   • Region leader election       │
+│   • Port 2379 (client API)       │
+│   • Port 2380 (peer replication) │
+└────────────────┬─────────────────┘
+                 │ registers with PD
+┌────────────────▼─────────────────┐
+│   TiKV storage nodes × 3         │
+│   tikv-0, tikv-1, tikv-2         │
+│   ─────────────────────────────  │
+│   • Range-based sharding         │
+│   • Raft replication per region  │
+│   • Port 20160 (gRPC data)       │
+│   • Port 20180 (status/metrics)  │
+└──────────────────────────────────┘
+```
+
+Minimum cluster: 3 PD nodes + 3 TiKV nodes. All three TiKV nodes must be available for writes (Raft quorum requires a majority).
+
+#### Configuring IndentiaDB to Use TiKV
+
+Set the `SURREAL_URL` environment variable to the PD endpoints:
+
+```bash
+# Single PD node (not recommended for production)
+SURREAL_URL=tikv://pd-0:2379
+
+# Three PD nodes (recommended — Raft quorum for metadata)
+SURREAL_URL=tikv://pd-0:2379,pd-1:2379,pd-2:2379
+```
+
+With Docker:
+
+```bash
+docker run -d \
+  -e SURREAL_URL="tikv://pd-0:2379,pd-1:2379,pd-2:2379" \
+  -p 7001:7001 -p 9200:9200 \
+  quay.io/indentia/indentiagraph:latest
+```
+
+In `config.toml`:
+
+```toml
+[storage]
+backend = "tikv"
+tikv_pd_endpoints = ["pd-0:2379", "pd-1:2379", "pd-2:2379"]
+```
+
+#### Docker Compose: Full TiKV Stack
+
+```yaml
+services:
+  pd-0:
+    image: pingcap/pd:v8.5.0
+    command: >
+      --name=pd-0
+      --client-urls=http://0.0.0.0:2379
+      --peer-urls=http://0.0.0.0:2380
+      --advertise-client-urls=http://pd-0:2379
+      --advertise-peer-urls=http://pd-0:2380
+      --initial-cluster=pd-0=http://pd-0:2380,pd-1=http://pd-1:2380,pd-2=http://pd-2:2380
+
+  tikv-0:
+    image: pingcap/tikv:v8.5.0
+    command: >
+      --addr=0.0.0.0:20160
+      --advertise-addr=tikv-0:20160
+      --pd=pd-0:2379,pd-1:2379,pd-2:2379
+    depends_on: [pd-0, pd-1, pd-2]
+
+  indentiadb:
+    image: quay.io/indentia/indentiagraph:latest
+    environment:
+      SURREAL_URL: "tikv://pd-0:2379,pd-1:2379,pd-2:2379"
+    ports:
+      - "7001:7001"
+      - "9200:9200"
+    depends_on: [tikv-0, tikv-1, tikv-2]
+```
+
+!!! warning "TiKV and LIVE queries"
+    TiKV does not support push notifications. `LIVE SELECT` statements and `DEFINE EVENT` handlers are unavailable when using the TiKV backend. Use the embedded `kv-surrealkv` backend if you need reactive queries.
 
 ### Comparison Table
 
@@ -87,7 +180,92 @@ TiKV is an external distributed key-value store based on the Raft consensus prot
 
 ---
 
-## 2. RDF Triple Storage
+## 2. The QLever SPARQL Engine
+
+IndentiaDB's SPARQL subsystem is a **Rust-native reimplementation of the core indexing and query-evaluation concepts from QLever** — a high-performance SPARQL engine developed at the University of Freiburg. The original C++ QLever project demonstrated that permutation-based triple indexing with vocabulary compression can evaluate SPARQL queries one to two orders of magnitude faster than traditional B-tree approaches.
+
+IndentiaDB embeds those same algorithmic ideas natively in Rust, without a C++ dependency or a separate QLever process. The goals are:
+
+- Bit-exact result compatibility with upstream C++ QLever for deterministic SPARQL queries
+- Native integration with the SurrealDB write path and transaction layer
+- Extension via RDF-star and SPARQL 1.2 features not yet in upstream QLever
+
+### What QLever Contributes
+
+| Concept | QLever Origin | IndentiaDB Implementation |
+|---------|--------------|--------------------------|
+| 6-permutation triple index | QLever's SPO/SOP/PSO/POS/OSP/OPS layout | Same layout, ZSTD + delta + varint compression |
+| Vocabulary compression | FSST (Fast Static Symbol Table) | FSST-compatible encoding; memory-mapped via `memmap2` |
+| `ql:contains-word` predicate | QLever's text index extension | Full inverted BM25 index integrated in IndentiaDB's FTS layer |
+| Cost-based join ordering | QLever's cardinality estimator | `sparopt` crate — filter pushdown, join reordering |
+| Delta triple tracking | QLever's delta index for updates | IndentiaDB delta layer that tracks insertions/deletions per graph |
+
+### Query Routing: QLever Engine vs SurrealDB Engine
+
+Not every query hits the QLever path. The query router dispatches based on the operation type:
+
+| Query Characteristic | Target Engine | Reason |
+|---------------------|---------------|--------|
+| `SELECT / CONSTRUCT / ASK / DESCRIBE` — read only, no FTS | **QLever** (Rust) | Permutation indexes optimally serve pure graph reads |
+| `SELECT` with `ql:contains-word` predicate | **QLever + FTS index** | QLever invokes the integrated BM25 text index |
+| `INSERT DATA / DELETE DATA / DELETE…WHERE` | **SurrealDB** | All writes go through the SurrealDB ACID layer |
+| `SPARQL()` inside a SurrealQL statement | **QLever** (inline dispatch) | Results returned as SurrealQL-typed values |
+| Requests to port `9200` | **FTS + vector layer** | Elasticsearch-compatible API, bypasses SPARQL parser |
+| `SERVICE <external-endpoint>` | **Federation engine** | Distributed across QLever + remote SPARQL endpoints |
+
+The split means reads are fully served by the highly-optimised permutation indexes while all state changes go through SurrealDB's transaction log, maintaining ACID guarantees and enabling LIVE queries.
+
+### The `ql:contains-word` Predicate
+
+QLever introduced the `ql:contains-word` predicate as a standard way to express full-text conditions inside SPARQL. IndentiaDB supports it natively:
+
+```sparql
+PREFIX ql: <http://qlever.cs.uni-freiburg.de/builtin/>
+
+SELECT ?article ?title ?score WHERE {
+  ?article <http://purl.org/dc/terms/title>   ?title .
+  ?article <http://purl.org/dc/terms/subject> ?subject .
+  (?title ?score) ql:contains-word "knowledge graph" .
+}
+ORDER BY DESC(?score)
+LIMIT 20
+```
+
+The `(?var ?score)` pair binds the BM25 score alongside the matched literal. The query is routed to the QLever engine which evaluates the triple patterns via permutation lookup and resolves the text predicate against the inverted BM25 index in a single pass.
+
+### Dual-Backend HA Architecture (QLever + SurrealDB)
+
+For large-scale deployments, QLever read replicas can be run alongside the SurrealDB cluster. The query router sends all reads to the QLever tier and all writes to SurrealDB, with an asynchronous sync process keeping the QLever index up to date:
+
+```
+ Clients
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│                    Query Router                          │
+│   SPARQL reads ──► QLever replicas (ReadOnlyMany PVC)   │
+│   Writes       ──► SurrealDB cluster (TiKV backend)     │
+└─────────────────────────────────────────────────────────┘
+         │                         │
+         ▼                         ▼
+ ┌────────────────┐       ┌─────────────────────┐
+ │ QLever nodes   │◄──────│ SurrealDB + TiKV    │
+ │ qlever-0,1,2   │ async │ surreal-0,1,2       │
+ │ (NFS/CephFS    │ sync  │ + pd-0,1,2          │
+ │  shared index) │       │ + tikv-0,1,2        │
+ └────────────────┘       └─────────────────────┘
+```
+
+Use this topology when:
+- Your RDF dataset exceeds 100 million triples and SPARQL query latency is critical
+- You need to separate read and write scaling independently
+- You are running analytics-heavy workloads alongside real-time updates
+
+For most deployments under 50 million triples, a single IndentiaDB process with the integrated QLever engine and `kv-surrealkv` storage is sufficient.
+
+---
+
+## 3. RDF Triple Storage
 
 The RDF triple store is the semantic core of IndentiaDB. It is implemented as a custom storage layer optimized for SPARQL pattern matching.
 
@@ -134,7 +312,7 @@ The vocabulary files are memory-mapped using `memmap2`. This means:
 
 ---
 
-## 3. Query Execution Pipeline
+## 4. Query Execution Pipeline
 
 ### Parsing
 
@@ -188,7 +366,7 @@ BFS with cycle detection ensures property paths over cyclic graphs terminate cor
 
 ---
 
-## 4. Vector Storage
+## 5. Vector Storage
 
 ### HNSW Indexing
 
@@ -229,7 +407,7 @@ The `<|k,ef|>` operator performs the HNSW search with k results and ef candidate
 
 ---
 
-## 5. Full-Text Search
+## 6. Full-Text Search
 
 ### Inverted Index Structure
 
@@ -268,7 +446,7 @@ DEFINE INDEX idx_body ON article FIELDS body
 
 ---
 
-## 6. Raft Consensus for High Availability
+## 7. Raft Consensus for High Availability
 
 When deploying IndentiaDB in HA mode (three or more nodes), nodes coordinate using the **OpenRaft 0.9** implementation of the Raft consensus protocol.
 
