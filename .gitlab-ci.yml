@@ -52,10 +52,6 @@ build:
         --signature-policy "$HOME/policy.json" \
         --authfile "$HOME/.config/containers/auth.json" \
         "${DOCS_IMAGE_NAME}:latest"
-    - echo "DOCS_IMAGE=${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
@@ -64,7 +60,7 @@ deploy:
   image: ${NEXUS_REGISTRY}/bitnami/git:latest
   needs:
     - job: build
-      artifacts: true
+      artifacts: false
   before_script:
     - git config --global user.email "ci@indentia.ai"
     - git config --global user.name "GitLab CI"
