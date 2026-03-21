@@ -8,7 +8,7 @@ variables:
   # Use DOCS_IMAGE_NAME to avoid QUAY_NAMESPACE project variable override
   DOCS_IMAGE_NAME: "quay.lvm.local/lvmit/indentiadb-docs"
   STORAGE_DRIVER: vfs
-  GITOPS_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lvm.local/indentia/indentia-gitops-htz.git"
+  GITOPS_REPO: "https://gitlab-ci-token:${GITLAB_API_TOKEN}@gitlab.lvm.local/indentia/indentia-gitops-htz.git"
   GITOPS_COMPONENT_PATH: "indentia-gitops-htz/environments/lvms-indentia-prod-system/indentiadb-docs"
 
 build:
