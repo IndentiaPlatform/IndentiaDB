@@ -64,6 +64,7 @@ deploy:
   before_script:
     - git config --global user.email "ci@indentia.ai"
     - git config --global user.name "GitLab CI"
+    - git config --global http.sslVerify false
   script:
     - |
       git clone ${GITOPS_REPO}
