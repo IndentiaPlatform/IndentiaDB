@@ -21,6 +21,7 @@ This approach — known as *polyglot persistence* — introduces compounding ope
 |---------|--------|
 | 6 separate systems to deploy and upgrade | DevOps complexity grows super-linearly |
 | 6 separate connection pools, credentials, and authentication layers | Security surface area multiplies |
+| **AuthZ/ACL must be replicated and kept in sync across every store** | **A permission change in one system does not propagate to the others — a user revoked in PostgreSQL may still query Neo4j or Elasticsearch. Drift between ACL stores is a persistent, silent security risk.** |
 | Data must be duplicated or synchronized across stores | ETL pipelines, lag, and consistency bugs |
 | No unified transaction boundary | Cross-model writes are not atomic |
 | Each system has a different query language | Developer onboarding overhead per system |
