@@ -180,44 +180,44 @@ services:
 
 ---
 
-## 2. The QLever SPARQL Engine
+## 2. The QLever-compatible SPARQL Engine
 
 IndentiaDB's SPARQL subsystem is a **Rust-native reimplementation of the core indexing and query-evaluation concepts from QLever** — a high-performance SPARQL engine developed at the University of Freiburg. The original C++ QLever project demonstrated that permutation-based triple indexing with vocabulary compression can evaluate SPARQL queries one to two orders of magnitude faster than traditional B-tree approaches.
 
-IndentiaDB embeds those same algorithmic ideas natively in Rust, without a C++ dependency or a separate QLever process. The goals are:
+IndentiaDB embeds those same algorithmic ideas natively in Rust, without a C++ dependency or a separate C++ QLever process. The goals are:
 
 - Bit-exact result compatibility with upstream C++ QLever for deterministic SPARQL queries
 - Native integration with the SurrealDB write path and transaction layer
 - Extension via RDF-star and SPARQL 1.2 features not yet in upstream QLever
 
-### What QLever Contributes
+### What QLever-compatible Contributes
 
-| Concept | QLever Origin | IndentiaDB Implementation |
-|---------|--------------|--------------------------|
+| Concept | C++ QLever Origin | IndentiaDB Implementation |
+|---------|-------------------|--------------------------|
 | 6-permutation triple index | QLever's SPO/SOP/PSO/POS/OSP/OPS layout | Same layout, ZSTD + delta + varint compression |
 | Vocabulary compression | FSST (Fast Static Symbol Table) | FSST-compatible encoding; memory-mapped via `memmap2` |
 | `ql:contains-word` predicate | QLever's text index extension | Full inverted BM25 index integrated in IndentiaDB's FTS layer |
 | Cost-based join ordering | QLever's cardinality estimator | `sparopt` crate — filter pushdown, join reordering |
 | Delta triple tracking | QLever's delta index for updates | IndentiaDB delta layer that tracks insertions/deletions per graph |
 
-### Query Routing: QLever Engine vs SurrealDB Engine
+### Query Routing: QLever-compatible Engine vs SurrealDB Engine
 
-Not every query hits the QLever path. The query router dispatches based on the operation type:
+Not every query hits the QLever-compatible path. The query router dispatches based on the operation type:
 
 | Query Characteristic | Target Engine | Reason |
 |---------------------|---------------|--------|
-| `SELECT / CONSTRUCT / ASK / DESCRIBE` — read only, no FTS | **QLever** (Rust) | Permutation indexes optimally serve pure graph reads |
-| `SELECT` with `ql:contains-word` predicate | **QLever + FTS index** | QLever invokes the integrated BM25 text index |
+| `SELECT / CONSTRUCT / ASK / DESCRIBE` — read only, no FTS | **QLever-compatible** (Rust) | Permutation indexes optimally serve pure graph reads |
+| `SELECT` with `ql:contains-word` predicate | **QLever-compatible + FTS index** | QLever-compatible invokes the integrated BM25 text index |
 | `INSERT DATA / DELETE DATA / DELETE…WHERE` | **SurrealDB** | All writes go through the SurrealDB ACID layer |
-| `SPARQL()` inside a SurrealQL statement | **QLever** (inline dispatch) | Results returned as SurrealQL-typed values |
+| `SPARQL()` inside a SurrealQL statement | **QLever-compatible** (inline dispatch) | Results returned as SurrealQL-typed values |
 | Requests to port `9200` | **FTS + vector layer** | Elasticsearch-compatible API, bypasses SPARQL parser |
-| `SERVICE <external-endpoint>` | **Federation engine** | Distributed across QLever + remote SPARQL endpoints |
+| `SERVICE <external-endpoint>` | **Federation engine** | Distributed across QLever-compatible + remote SPARQL endpoints |
 
 The split means reads are fully served by the highly-optimised permutation indexes while all state changes go through SurrealDB's transaction log, maintaining ACID guarantees and enabling LIVE queries.
 
 ### The `ql:contains-word` Predicate
 
-QLever introduced the `ql:contains-word` predicate as a standard way to express full-text conditions inside SPARQL. IndentiaDB supports it natively:
+C++ QLever introduced the `ql:contains-word` predicate as a standard way to express full-text conditions inside SPARQL. IndentiaDB supports it natively:
 
 ```sparql
 PREFIX ql: <http://qlever.cs.uni-freiburg.de/builtin/>
@@ -231,11 +231,11 @@ ORDER BY DESC(?score)
 LIMIT 20
 ```
 
-The `(?var ?score)` pair binds the BM25 score alongside the matched literal. The query is routed to the QLever engine which evaluates the triple patterns via permutation lookup and resolves the text predicate against the inverted BM25 index in a single pass.
+The `(?var ?score)` pair binds the BM25 score alongside the matched literal. The query is routed to the QLever-compatible engine which evaluates the triple patterns via permutation lookup and resolves the text predicate against the inverted BM25 index in a single pass.
 
-### Dual-Backend HA Architecture (QLever + SurrealDB)
+### Dual-Backend HA Architecture (QLever-compatible + SurrealDB)
 
-For large-scale deployments, QLever read replicas can be run alongside the SurrealDB cluster. The query router sends all reads to the QLever tier and all writes to SurrealDB, with an asynchronous sync process keeping the QLever index up to date:
+For large-scale deployments, QLever-compatible read replicas can be run alongside the SurrealDB cluster. The query router sends all reads to the QLever-compatible tier and all writes to SurrealDB, with an asynchronous sync process keeping the QLever-compatible index up to date:
 
 ```
  Clients
@@ -243,13 +243,13 @@ For large-scale deployments, QLever read replicas can be run alongside the Surre
     ▼
 ┌─────────────────────────────────────────────────────────┐
 │                    Query Router                          │
-│   SPARQL reads ──► QLever replicas (ReadOnlyMany PVC)   │
+│   SPARQL reads ──► QLever-compatible replicas (ReadOnlyMany PVC)   │
 │   Writes       ──► SurrealDB cluster (TiKV backend)     │
 └─────────────────────────────────────────────────────────┘
          │                         │
          ▼                         ▼
  ┌────────────────┐       ┌─────────────────────┐
- │ QLever nodes   │◄──────│ SurrealDB + TiKV    │
+ │ QLever-compatible nodes   │◄──────│ SurrealDB + TiKV    │
  │ qlever-0,1,2   │ async │ surreal-0,1,2       │
  │ (NFS/CephFS    │ sync  │ + pd-0,1,2          │
  │  shared index) │       │ + tikv-0,1,2        │
@@ -261,7 +261,7 @@ Use this topology when:
 - You need to separate read and write scaling independently
 - You are running analytics-heavy workloads alongside real-time updates
 
-For most deployments under 50 million triples, a single IndentiaDB process with the integrated QLever engine and `kv-surrealkv` storage is sufficient.
+For most deployments under 50 million triples, a single IndentiaDB process with the integrated QLever-compatible engine and `kv-surrealkv` storage is sufficient.
 
 ---
 

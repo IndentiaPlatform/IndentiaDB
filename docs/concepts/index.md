@@ -36,7 +36,7 @@ The traditional answer is to pick the "right tool for the job." But the right to
 
 IndentiaDB stores all five data models in one storage engine, accessed through one connection, managed by one deployment. Under the hood, two specialized engines cooperate:
 
-- **QLever (Rust-native)** — serves all SPARQL reads using a high-performance permutation-based triple index, originally pioneered by the C++ QLever project at the University of Freiburg
+- **QLever-compatible (Rust-native)** — serves all SPARQL reads using a high-performance permutation-based triple index, originally pioneered by the C++ QLever project at the University of Freiburg
 - **SurrealDB** — handles all writes, document/relational records, vector search, full-text indexing, LIVE queries, and ACID transactions; backed by either embedded `kv-surrealkv` or distributed TiKV
 
 The query router directs each request to the appropriate engine transparently. See [Architecture](architecture.md) for the full routing table and TiKV deployment guide.
