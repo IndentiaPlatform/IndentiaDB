@@ -9,7 +9,7 @@ variables:
   IMAGE_NAME: "${QUAY_REGISTRY}/${QUAY_NAMESPACE}/indentiadb-docs"
   STORAGE_DRIVER: vfs
   GITOPS_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lvm.local/indentia/indentia-gitops-htz.git"
-  GITOPS_COMPONENT_PATH: "environments/lvms-indentia-prod-system/indentiadb-docs"
+  GITOPS_COMPONENT_PATH: "indentia-gitops-htz/environments/lvms-indentia-prod-system/indentiadb-docs"
 
 build:
   stage: build
@@ -52,39 +52,29 @@ build:
         --signature-policy "$HOME/policy.json" \
         --authfile "$HOME/.config/containers/auth.json" \
         "${IMAGE_NAME}:latest"
-    - echo "IMAGE=${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" > image.env
+    - echo "DOCS_IMAGE=${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" >> build.env
   artifacts:
     reports:
-      dotenv: image.env
+      dotenv: build.env
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
 deploy:
   stage: deploy
-  image: ${NEXUS_REGISTRY}/bitnami/kubectl:latest
+  image: ${NEXUS_REGISTRY}/bitnami/git:latest
   needs:
     - job: build
       artifacts: true
   before_script:
-    - apk add --no-cache git
     - git config --global user.email "ci@indentia.ai"
     - git config --global user.name "GitLab CI"
   script:
-    - git clone ${GITOPS_REPO} gitops-htz
-    - cd gitops-htz/indentia-gitops-htz/${GITOPS_COMPONENT_PATH}
     - |
-      # Get full image digest from Quay
-      DIGEST=$(buildah inspect --format '{{.FromImageDigest}}' ${IMAGE} 2>/dev/null || echo "")
-      if [ -n "$DIGEST" ]; then
-        IMAGE_WITH_DIGEST="${IMAGE_NAME}@${DIGEST}"
-      else
-        IMAGE_WITH_DIGEST="${IMAGE}"
-      fi
-    - |
-      # Update image in kustomization.yaml
+      git clone ${GITOPS_REPO}
+      cd ${GITOPS_COMPONENT_PATH}
       sed -i "s|newTag:.*|newTag: ${CI_COMMIT_SHORT_SHA}|" kustomization.yaml
-    - git add kustomization.yaml
-    - git commit -m "chore: update indentiadb-docs to ${CI_COMMIT_SHORT_SHA} [skip ci]"
-    - git push origin main
+      git add kustomization.yaml
+      git commit -m "chore: update indentiadb-docs to ${CI_COMMIT_SHORT_SHA} [skip ci]"
+      git push origin main
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
