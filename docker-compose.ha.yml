@@ -1,0 +1,167 @@
+services:
+  # ---------------------------------------------------------------------------
+  # IndentiaDB 3-node Raft cluster
+  # ---------------------------------------------------------------------------
+  indentiadb-0:
+    image: quay.io/indentia/indentiagraph:latest
+    container_name: indentiadb-0
+    hostname: indentiadb-0
+    restart: unless-stopped
+    ports:
+      - "17001:7001"
+      - "19200:9200"
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: changeme
+      ES_HYBRID_SCORER: bayesian
+      ES_VECTOR_SEARCH_MODE: hnsw
+      RAFT_NODE_ID: "0"
+      RAFT_SEED_NODES: "indentiadb-0:7002,indentiadb-1:7002,indentiadb-2:7002"
+    volumes:
+      - indentiadb-data-0:/data
+    networks:
+      - indentiadb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  indentiadb-1:
+    image: quay.io/indentia/indentiagraph:latest
+    container_name: indentiadb-1
+    hostname: indentiadb-1
+    restart: unless-stopped
+    ports:
+      - "27001:7001"
+      - "29200:9200"
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: changeme
+      ES_HYBRID_SCORER: bayesian
+      ES_VECTOR_SEARCH_MODE: hnsw
+      RAFT_NODE_ID: "1"
+      RAFT_SEED_NODES: "indentiadb-0:7002,indentiadb-1:7002,indentiadb-2:7002"
+    volumes:
+      - indentiadb-data-1:/data
+    networks:
+      - indentiadb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  indentiadb-2:
+    image: quay.io/indentia/indentiagraph:latest
+    container_name: indentiadb-2
+    hostname: indentiadb-2
+    restart: unless-stopped
+    ports:
+      - "37001:7001"
+      - "39200:9200"
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: changeme
+      ES_HYBRID_SCORER: bayesian
+      ES_VECTOR_SEARCH_MODE: hnsw
+      RAFT_NODE_ID: "2"
+      RAFT_SEED_NODES: "indentiadb-0:7002,indentiadb-1:7002,indentiadb-2:7002"
+    volumes:
+      - indentiadb-data-2:/data
+    networks:
+      - indentiadb-cluster
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # HAProxy load balancer
+  # ---------------------------------------------------------------------------
+  haproxy:
+    image: haproxy:2.9-alpine
+    container_name: indentiadb-lb
+    restart: unless-stopped
+    ports:
+      - "7001:7001"
+      - "9200:9200"
+      - "8404:8404"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - indentiadb-cluster
+    depends_on:
+      indentiadb-0:
+        condition: service_healthy
+      indentiadb-1:
+        condition: service_healthy
+      indentiadb-2:
+        condition: service_healthy
+    configs:
+      - source: haproxy-config
+        target: /usr/local/etc/haproxy/haproxy.cfg
+
+configs:
+  haproxy-config:
+    content: |
+      global
+        log stdout format raw local0
+
+      defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        timeout connect 5s
+        timeout client  30s
+        timeout server  30s
+        retries 3
+
+      # Stats dashboard
+      frontend stats
+        bind *:8404
+        stats enable
+        stats uri /stats
+        stats refresh 10s
+
+      # HTTP / SPARQL / GraphQL frontend
+      frontend http_front
+        bind *:7001
+        default_backend indentiadb_http
+
+      # Elasticsearch-compatible frontend
+      frontend es_front
+        bind *:9200
+        default_backend indentiadb_es
+
+      # HTTP backend with health checks
+      backend indentiadb_http
+        option httpchk GET /health
+        http-check expect status 200
+        balance roundrobin
+        server indentiadb-0 indentiadb-0:7001 check inter 5s fall 3 rise 2
+        server indentiadb-1 indentiadb-1:7001 check inter 5s fall 3 rise 2
+        server indentiadb-2 indentiadb-2:7001 check inter 5s fall 3 rise 2
+
+      # ES-compat backend with health checks
+      backend indentiadb_es
+        option httpchk GET /health
+        http-check expect status 200
+        balance roundrobin
+        server indentiadb-0 indentiadb-0:9200 check inter 5s fall 3 rise 2 port 7001
+        server indentiadb-1 indentiadb-1:9200 check inter 5s fall 3 rise 2 port 7001
+        server indentiadb-2 indentiadb-2:9200 check inter 5s fall 3 rise 2 port 7001
+
+volumes:
+  indentiadb-data-0:
+  indentiadb-data-1:
+  indentiadb-data-2:
+
+networks:
+  indentiadb-cluster:
+    driver: bridge
