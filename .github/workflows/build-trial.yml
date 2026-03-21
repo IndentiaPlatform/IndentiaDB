@@ -1,0 +1,166 @@
+# ============================================================================
+# IndentiaDB Trial Image Build Pipeline
+# ============================================================================
+# Bouwt een container image met een compile-time expiry datum (huidige datum + 2 maanden).
+# De expiry is gebakken in de Rust binary via option_env!("TRIAL_EXPIRES_AT") —
+# niet te overschrijven via runtime environment variabelen.
+#
+# Flow:
+#   1. Bereken expiry datum (vandaag + 2 maanden)
+#   2. Trigger de private GitLab pipeline met TRIAL_EXPIRES_AT
+#   3. Wacht op completion en download de trial binary artifact
+#   4. Bouw container image met Containerfile.trial
+#   5. Push naar quay.io/indentia/indentiagraph
+#
+# Vereiste GitHub Secrets:
+#   - GITLAB_API_TOKEN  : GitLab PAT met read_api + trigger pipeline scope
+#   - GITLAB_PROJECT_ID : Numeriek project ID van de private repo
+#   - QUAY_USERNAME     : quay.io robot account username
+#   - QUAY_PASSWORD     : quay.io robot account password
+# ============================================================================
+
+name: Build Trial Image
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Elke maandag om 02:00 UTC
+  workflow_dispatch:       # Handmatige trigger
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: quay.io/indentia/indentiagraph
+  GITLAB_URL: https://gitlab.lvm.local
+
+jobs:
+  build-and-push:
+    runs-on: [self-hosted, internal]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bereken expiry datum
+        id: expiry
+        run: |
+          EXPIRES_AT=$(date -d '+2 months' +%Y-%m-%d)
+          echo "expires_at=${EXPIRES_AT}" >> "$GITHUB_OUTPUT"
+          echo "Expiry datum: ${EXPIRES_AT}"
+
+      - name: Trigger GitLab trial build pipeline
+        id: trigger
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+        run: |
+          RESP=$(curl -sf -X POST \
+            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            -F "ref=main" \
+            -F "variables[TRIAL_EXPIRES_AT]=${{ steps.expiry.outputs.expires_at }}" \
+            "${GITLAB_URL}/api/v4/projects/${GITLAB_PROJECT_ID}/pipeline")
+          PIPELINE_ID=$(echo "$RESP" | jq -r '.id')
+          if [ -z "$PIPELINE_ID" ] || [ "$PIPELINE_ID" = "null" ]; then
+            echo "Fout bij triggeren pipeline: $RESP"
+            exit 1
+          fi
+          echo "pipeline_id=${PIPELINE_ID}" >> "$GITHUB_OUTPUT"
+          echo "GitLab pipeline gestart: ${PIPELINE_ID}"
+
+      - name: Wacht op GitLab pipeline
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+        run: |
+          PIPELINE_ID=${{ steps.trigger.outputs.pipeline_id }}
+          echo "Wachten op pipeline ${PIPELINE_ID}..."
+          for i in $(seq 1 120); do
+            STATUS=$(curl -sf \
+              -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+              "${GITLAB_URL}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${PIPELINE_ID}" \
+              | jq -r '.status')
+            echo "[${i}/120] Status: ${STATUS}"
+            case "$STATUS" in
+              success) echo "Pipeline geslaagd."; exit 0 ;;
+              failed|canceled|skipped)
+                echo "Pipeline mislukt met status: ${STATUS}"
+                exit 1
+                ;;
+            esac
+            sleep 60
+          done
+          echo "Timeout: pipeline niet voltooid binnen 2 uur"
+          exit 1
+
+      - name: Zoek trial build job ID
+        id: job
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+        run: |
+          PIPELINE_ID=${{ steps.trigger.outputs.pipeline_id }}
+          JOB_ID=$(curl -sf \
+            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "${GITLAB_URL}/api/v4/projects/${GITLAB_PROJECT_ID}/pipelines/${PIPELINE_ID}/jobs" \
+            | jq -r '.[] | select(.name == "build:linux-amd64-trial") | .id')
+          if [ -z "$JOB_ID" ] || [ "$JOB_ID" = "null" ]; then
+            echo "Job 'build:linux-amd64-trial' niet gevonden in pipeline ${PIPELINE_ID}"
+            exit 1
+          fi
+          echo "job_id=${JOB_ID}" >> "$GITHUB_OUTPUT"
+          echo "Job ID: ${JOB_ID}"
+
+      - name: Download trial binary van GitLab
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+        run: |
+          JOB_ID=${{ steps.job.outputs.job_id }}
+          mkdir -p artifacts/linux-amd64
+
+          curl -fL -o artifacts.zip \
+            -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
+            "${GITLAB_URL}/api/v4/projects/${GITLAB_PROJECT_ID}/jobs/${JOB_ID}/artifacts"
+
+          unzip -o artifacts.zip -d downloaded/
+          cp downloaded/artifacts/linux-amd64-trial/indentiagraph artifacts/linux-amd64/indentiagraph
+          chmod +x artifacts/linux-amd64/indentiagraph
+
+          # Sanity check: verifieer dat het een geldig ELF binary is
+          file artifacts/linux-amd64/indentiagraph | grep -q "ELF" || {
+            echo "Gedownloade binary is geen geldig ELF bestand"
+            exit 1
+          }
+          echo "Binary gedownload en geverifieerd."
+
+      - name: Login quay.io
+        run: |
+          docker login quay.io \
+            -u "${{ secrets.QUAY_USERNAME }}" \
+            -p "${{ secrets.QUAY_PASSWORD }}"
+
+      - name: Build container image
+        run: |
+          docker build \
+            -f Containerfile.trial \
+            -t "${{ env.IMAGE }}:latest" \
+            -t "${{ env.IMAGE }}:${{ steps.expiry.outputs.expires_at }}" \
+            --label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "indentia.trial.expires=${{ steps.expiry.outputs.expires_at }}" \
+            .
+
+      - name: Push container image
+        run: |
+          docker push "${{ env.IMAGE }}:latest"
+          docker push "${{ env.IMAGE }}:${{ steps.expiry.outputs.expires_at }}"
+          echo "Image gepusht:"
+          echo "  ${{ env.IMAGE }}:latest"
+          echo "  ${{ env.IMAGE }}:${{ steps.expiry.outputs.expires_at }}"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f artifacts.zip
+          rm -rf downloaded/
+          rm -rf artifacts/
+          docker logout quay.io || true

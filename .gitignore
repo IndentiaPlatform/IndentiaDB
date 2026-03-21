@@ -1,0 +1,22 @@
+# MkDocs generated site — do not commit
+site/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Rust
+target/
+*.lock.bak
+
+# IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets
+.env
+*.env.local

@@ -1,0 +1,140 @@
+site_name: IndentiaDB
+site_description: Multi-Model Database for Knowledge Graphs & Enterprise AI
+site_url: https://dbdocs.indentia.ai
+repo_url: https://github.com/Indentia/indentiagraph
+repo_name: Indentia/indentiagraph
+edit_uri: ""
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - search.highlight
+    - search.suggest
+    - search.share
+    - toc.follow
+  logo: img/logo.png
+  favicon: img/favicon.png
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      lang: en
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Indentia/indentiagraph
+  version:
+    provider: mike
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - Quick Start: getting-started/quickstart.md
+    - Configuration: getting-started/configuration.md
+  - Concepts:
+    - concepts/index.md
+    - Architecture: concepts/architecture.md
+    - Data Models: concepts/data-models.md
+  - Query Languages:
+    - query-languages/index.md
+    - SPARQL 1.2: query-languages/sparql.md
+    - SurrealQL: query-languages/surrealql.md
+    - LPG Graph Queries: query-languages/lpg.md
+    - Hybrid Queries: query-languages/hybrid-queries.md
+  - Features:
+    - features/index.md
+    - Enterprise Search: features/enterprise-search.md
+    - Vector Search & RAG: features/vector-search.md
+    - Live Queries & Events: features/live-queries.md
+    - Federated Queries: features/federation.md
+    - Semantic Inference: features/inference.md
+    - Bitemporal Queries: features/bitemporal.md
+    - Geospatial: features/geospatial.md
+  - Security:
+    - security/index.md
+    - Authentication: security/authentication.md
+    - Authorization: security/authorization.md
+    - Triple-Level ACL: security/acl.md
+  - API Reference:
+    - api-reference/index.md
+    - SPARQL & REST Endpoints: api-reference/sparql-endpoints.md
+    - Elasticsearch API: api-reference/elasticsearch-api.md
+  - Deployment:
+    - deployment/index.md
+    - Docker: deployment/docker.md
+    - Kubernetes: deployment/kubernetes.md
+    - OpenShift / OKD: deployment/openshift.md
+  - Examples:
+    - examples/index.md
+    - SurrealQL: examples/surrealql.md
+    - RDF & SPARQL: examples/rdf-sparql.md
+    - LPG Graph: examples/lpg-graph.md
+    - Enterprise Search: examples/enterprise-search.md
+    - Live Data & Agents: examples/live-data.md
+    - Multi-Model: examples/multi-model.md

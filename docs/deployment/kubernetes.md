@@ -1,21 +1,23 @@
-# IndentiaDB: Kubernetes Deployment Guide
+# Kubernetes Deployment
 
-This guide covers deploying IndentiaDB on Kubernetes, using either the IndentiaDB Operator (recommended) or manual StatefulSet manifests.
+This guide covers deploying IndentiaDB on Kubernetes, using either the IndentiaDB Operator (recommended for production) or manual StatefulSet manifests for full control.
 
 ## Prerequisites
 
 - Kubernetes 1.28 or later
 - `kubectl` configured with cluster access
 - A StorageClass that supports dynamic provisioning (for persistent volumes)
-- Helm 3.x (optional, for operator installation)
+- Helm 3.x (optional, for Operator installation)
+
+---
 
 ## Option 1: Kubernetes Operator (Recommended)
 
-The IndentiaDB Operator automates cluster provisioning, scaling, failover, and upgrades.
+The IndentiaDB Operator automates cluster provisioning, scaling, failover, and rolling upgrades via a Custom Resource Definition (CRD).
 
 ### Install the Operator
 
-Install the Custom Resource Definition and operator:
+Install the CRD and operator directly:
 
 ```bash
 # Install the CRD
@@ -25,7 +27,7 @@ kubectl apply -f https://raw.githubusercontent.com/indentia/indentiagraph-operat
 kubectl apply -f https://raw.githubusercontent.com/indentia/indentiagraph-operator/main/config/operator/operator.yaml
 ```
 
-Or with Helm:
+Or install with Helm:
 
 ```bash
 helm repo add indentia https://charts.indentia.io
@@ -43,9 +45,8 @@ kubectl get pods -n indentiadb-system
 
 ### Create an IndentiaGraphCluster Resource
 
-Create a file named `indentiagraph-cluster.yaml`:
-
 ```yaml
+# indentiagraph-cluster.yaml
 apiVersion: indentia.io/v1alpha1
 kind: IndentiaGraphCluster
 metadata:
@@ -104,7 +105,7 @@ spec:
     key: indentiagraph.toml
 ```
 
-Create the admin credentials secret:
+Create the namespace and admin credentials secret:
 
 ```bash
 kubectl create namespace indentiadb
@@ -121,29 +122,84 @@ Apply the cluster resource:
 kubectl apply -f indentiagraph-cluster.yaml
 ```
 
-Monitor the cluster status:
+Monitor cluster status:
 
 ```bash
 kubectl get indentiagraphcluster -n indentiadb
 kubectl get pods -n indentiadb -w
 ```
 
+---
+
 ## Option 2: Manual StatefulSet
 
-For environments where you prefer direct control over Kubernetes resources.
+For environments where you need direct control over all Kubernetes resources.
 
-### Namespace
+### Namespace and RBAC
 
 ```yaml
+# namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
   name: indentiadb
+---
+# serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: indentiadb
+  namespace: indentiadb
+---
+# role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: indentiadb
+  namespace: indentiadb
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "endpoints"]
+    verbs: ["get", "list", "watch"]
+---
+# rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: indentiadb
+  namespace: indentiadb
+subjects:
+  - kind: ServiceAccount
+    name: indentiadb
+    namespace: indentiadb
+roleRef:
+  kind: Role
+  name: indentiadb
+  apiGroup: rbac.authorization.k8s.io
 ```
+
+### Secret for Credentials
+
+```yaml
+# secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: indentiadb-admin-credentials
+  namespace: indentiadb
+type: Opaque
+stringData:
+  username: root
+  password: changeme
+```
+
+!!! warning "Do not commit secrets to Git"
+    Use a secrets manager (Vault, Sealed Secrets, External Secrets Operator) instead of committing plaintext credentials to your repository.
 
 ### ConfigMap
 
 ```yaml
+# configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -151,19 +207,30 @@ metadata:
   namespace: indentiadb
 data:
   indentiagraph.toml: |
-    # Add your IndentiaDB configuration here
     [server]
     bind = "0.0.0.0"
     http_port = 7001
     raft_port = 7002
     es_port = 9200
+
+    [search]
+    hybrid_scorer = "bayesian"
+    vector_search_mode = "hnsw"
+
+    [cache]
+    query_cache_size_mb = 512
+
+    [logging]
+    level = "info"
+    format = "json"
 ```
 
-### Headless Service (Raft Discovery)
+### Headless Service (for Raft Discovery)
 
-A headless service is required for Raft peer discovery between StatefulSet pods:
+A headless service is required for DNS-based peer discovery between StatefulSet pods:
 
 ```yaml
+# headless-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -187,9 +254,10 @@ spec:
       targetPort: 9200
 ```
 
-### Client Service
+### ClusterIP Service (for Client Access)
 
 ```yaml
+# client-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -210,9 +278,10 @@ spec:
       targetPort: 9200
 ```
 
-### StatefulSet
+### StatefulSet with PersistentVolumeClaims
 
 ```yaml
+# statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -232,10 +301,16 @@ spec:
       labels:
         app.kubernetes.io/name: indentiadb
     spec:
+      serviceAccountName: indentiadb
       terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: indentiadb
           image: quay.io/indentia/indentiagraph:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 7001
@@ -297,7 +372,7 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: standard
+        storageClassName: standard   # Change to your StorageClass
         resources:
           requests:
             storage: 50Gi
@@ -305,7 +380,10 @@ spec:
 
 ### PodDisruptionBudget
 
+Ensures at most one pod is unavailable during voluntary disruptions (node drains, upgrades):
+
 ```yaml
+# pdb.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -318,67 +396,10 @@ spec:
       app.kubernetes.io/name: indentiadb
 ```
 
-### Apply All Resources
-
-```bash
-kubectl apply -f namespace.yaml
-kubectl apply -f indentiadb-admin-credentials.yaml
-kubectl apply -f configmap.yaml
-kubectl apply -f headless-service.yaml
-kubectl apply -f client-service.yaml
-kubectl apply -f statefulset.yaml
-kubectl apply -f pdb.yaml
-```
-
-## Persistent Volumes
-
-The StatefulSet uses `volumeClaimTemplates` to dynamically provision a PersistentVolumeClaim per pod. Adjust the `storageClassName` and `storage` size to match your cluster:
+### Ingress with TLS
 
 ```yaml
-volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: standard   # Change to your StorageClass
-      resources:
-        requests:
-          storage: 50Gi            # Adjust based on expected data size
-```
-
-To list provisioned volumes:
-
-```bash
-kubectl get pvc -n indentiadb
-```
-
-## Monitoring with Prometheus
-
-Create a ServiceMonitor to scrape IndentiaDB metrics:
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: indentiadb
-  namespace: indentiadb
-  labels:
-    app.kubernetes.io/name: indentiadb
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: indentiadb
-  endpoints:
-    - port: http
-      path: /metrics
-      interval: 30s
-```
-
-## Ingress Configuration
-
-Expose IndentiaDB externally with an Ingress resource:
-
-```yaml
+# ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -386,11 +407,15 @@ metadata:
   namespace: indentiadb
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - indentiadb.example.com
+        - indentiadb-es.example.com
       secretName: indentiadb-tls
   rules:
     - host: indentiadb.example.com
@@ -403,7 +428,10 @@ spec:
                 name: indentiadb
                 port:
                   number: 7001
-          - path: /es
+    - host: indentiadb-es.example.com
+      http:
+        paths:
+          - path: /
             pathType: Prefix
             backend:
               service:
@@ -412,9 +440,118 @@ spec:
                   number: 9200
 ```
 
+### HorizontalPodAutoscaler
+
+!!! note "HPA and Raft"
+    IndentiaDB uses Raft consensus which requires an odd number of replicas. HPA min/max should be set to maintain odd replica counts. Consider using the Operator instead, which handles this automatically.
+
+```yaml
+# hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: indentiadb
+  namespace: indentiadb
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: indentiadb
+  minReplicas: 3
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+```
+
+### Apply All Resources
+
+```bash
+kubectl apply -f namespace.yaml
+kubectl apply -f serviceaccount.yaml
+kubectl apply -f role.yaml
+kubectl apply -f rolebinding.yaml
+kubectl apply -f secret.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f headless-service.yaml
+kubectl apply -f client-service.yaml
+kubectl apply -f statefulset.yaml
+kubectl apply -f pdb.yaml
+kubectl apply -f ingress.yaml
+```
+
+---
+
+## Persistent Volumes
+
+The StatefulSet uses `volumeClaimTemplates` to provision one PVC per pod. List provisioned volumes:
+
+```bash
+kubectl get pvc -n indentiadb
+```
+
+Adjust the `storageClassName` and `storage` size to match your cluster's storage provider:
+
+```yaml
+volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard   # e.g., gp3-csi, premium-rwo, local-path
+      resources:
+        requests:
+          storage: 50Gi
+```
+
+---
+
+## Monitoring with Prometheus ServiceMonitor
+
+Requires the Prometheus Operator (`kube-prometheus-stack`) to be installed.
+
+```yaml
+# servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: indentiadb
+  namespace: indentiadb
+  labels:
+    app.kubernetes.io/name: indentiadb
+    release: kube-prometheus-stack    # Must match Prometheus selector labels
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: indentiadb
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+```
+
+Apply:
+
+```bash
+kubectl apply -f servicemonitor.yaml
+```
+
+---
+
 ## Scaling
 
-IndentiaDB uses Raft consensus for cluster coordination. The number of replicas **must be odd** (1, 3, 5, ...) to maintain quorum.
+IndentiaDB uses Raft consensus; replicas **must be odd** (1, 3, 5, ...).
 
 Scale the cluster:
 
@@ -423,11 +560,13 @@ Scale the cluster:
 kubectl scale statefulset indentiadb -n indentiadb --replicas=5
 ```
 
-When using the operator, update the `spec.replicas` field in the `IndentiaGraphCluster` resource instead.
+When using the Operator, update the `spec.replicas` field in the `IndentiaGraphCluster` resource instead.
+
+---
 
 ## Rolling Updates
 
-The StatefulSet performs rolling updates by default, replacing pods one at a time starting from the highest ordinal:
+The StatefulSet updates pods in reverse ordinal order (highest index first):
 
 ```bash
 # Update the image
@@ -439,7 +578,9 @@ kubectl set image statefulset/indentiadb \
 kubectl rollout status statefulset/indentiadb -n indentiadb
 ```
 
-The `PodDisruptionBudget` ensures that at most one pod is unavailable during the update, preserving cluster availability.
+The `PodDisruptionBudget` ensures at most one pod is unavailable during the update.
+
+---
 
 ## Ports Reference
 
