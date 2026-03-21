@@ -4,9 +4,9 @@ stages:
 
 variables:
   QUAY_REGISTRY: "quay.lvm.local"
-  QUAY_NAMESPACE: "lvmit"
   NEXUS_REGISTRY: "nexus.lvm.local:8082"
-  IMAGE_NAME: "${QUAY_REGISTRY}/${QUAY_NAMESPACE}/indentiadb-docs"
+  # Use DOCS_IMAGE_NAME to avoid QUAY_NAMESPACE project variable override
+  DOCS_IMAGE_NAME: "quay.lvm.local/lvmit/indentiadb-docs"
   STORAGE_DRIVER: vfs
   GITOPS_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.lvm.local/indentia/indentia-gitops-htz.git"
   GITOPS_COMPONENT_PATH: "indentia-gitops-htz/environments/lvms-indentia-prod-system/indentiadb-docs"
@@ -35,8 +35,8 @@ build:
         --signature-policy "$HOME/policy.json" \
         --layers \
         -f Containerfile \
-        -t "${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" \
-        -t "${IMAGE_NAME}:latest" \
+        -t "${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" \
+        -t "${DOCS_IMAGE_NAME}:latest" \
         .
     - |
       buildah push \
@@ -44,15 +44,15 @@ build:
         --tls-verify=false \
         --signature-policy "$HOME/policy.json" \
         --authfile "$HOME/.config/containers/auth.json" \
-        "${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
+        "${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}"
     - |
       buildah push \
         --storage-driver ${STORAGE_DRIVER} \
         --tls-verify=false \
         --signature-policy "$HOME/policy.json" \
         --authfile "$HOME/.config/containers/auth.json" \
-        "${IMAGE_NAME}:latest"
-    - echo "DOCS_IMAGE=${IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" >> build.env
+        "${DOCS_IMAGE_NAME}:latest"
+    - echo "DOCS_IMAGE=${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" >> build.env
   artifacts:
     reports:
       dotenv: build.env
