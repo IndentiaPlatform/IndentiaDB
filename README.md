@@ -47,7 +47,7 @@ IndentiaDB unifies RDF graphs, JSON documents, full-text search, vector embeddin
 ### Docker (simplest)
 
 ```bash
-docker run -p 7001:7001 -p 9200:9200 quay.io/indentia/indentiagraph:latest
+docker run -p 7001:7001 -p 9200:9200 ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 IndentiaDB is now running with:
@@ -57,8 +57,8 @@ IndentiaDB is now running with:
 ### Docker Compose
 
 ```bash
-git clone https://github.com/Indentia/indentiagraph.git
-cd indentiagraph
+git clone https://github.com/IndentiaPlatform/IndentiaDB.git
+cd IndentiaDB
 docker compose up -d
 ```
 
@@ -66,7 +66,7 @@ docker compose up -d
 
 ```bash
 # Download the latest release for your platform
-curl -L https://github.com/Indentia/indentiagraph/releases/latest/download/indentiagraph-$(uname -s)-$(uname -m) \
+curl -L https://github.com/IndentiaPlatform/IndentiaDB/releases/latest/download/indentiagraph-$(uname -s)-$(uname -m) \
   -o indentiagraph
 chmod +x indentiagraph
 
