@@ -156,5 +156,4 @@ curl -X POST http://localhost:9200/articles/_search \
 
 ## License
 
-IndentiaDB is licensed under the [Apache License 2.0](https://github.com/Indentia/indentiagraph/blob/main/LICENSE).
 Copyright 2024–2026 Indentia B.V.
