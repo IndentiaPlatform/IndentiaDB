@@ -186,7 +186,7 @@ curl -X POST http://localhost:7001/sql \
 
 ---
 
-## Step 5: First Elasticsearch Search
+## Step 5: First Elasticsearch-compatible Search
 
 IndentiaDB exposes a drop-in Elasticsearch-compatible REST API on port 9200.
 

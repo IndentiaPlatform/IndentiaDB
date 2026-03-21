@@ -12,7 +12,7 @@ IndentiaDB supports six query interfaces. Each targets a different data model an
 | **SurrealQL** | `POST /sql` (WebSocket `ws://`) | 7001 | Relational tables, document CRUD, graph edge traversals, vector search, full-text search, transactions, LIVE queries |
 | **LPG JSON DSL** | `POST /lpg/query` | 7001 | Graph algorithms: traversal, shortest path, PageRank, connected components, neighbor count |
 | **GraphQL** | `GET/POST /graphql` | 7001 | GraphQL clients, API gateways, frontend integrations |
-| **Elasticsearch Query DSL** | `GET/POST /_search`, `POST /:index/_search` | 9200 | Full-text search, hybrid BM25+vector, ES client libraries, Kibana-compatible analytics |
+| **Elasticsearch-compatible Query DSL** | `GET/POST /_search`, `POST /:index/_search` | 9200 | Full-text search, hybrid BM25+vector, ES client libraries, Kibana-compatible analytics |
 | **Hybrid (SPARQL inside SurrealQL)** | `POST /sql` | 7001 | Cross-model queries: fetch RDF data and use results in document/relational queries |
 
 ---
@@ -136,9 +136,9 @@ query {
 
 ---
 
-## Elasticsearch Query DSL
+## Elasticsearch-compatible Query DSL
 
-IndentiaDB listens on port 9200 and accepts the Elasticsearch Query DSL for full-text search and hybrid search operations. Existing applications using the ES client can point to IndentiaDB without code changes.
+IndentiaDB listens on port 9200 and accepts the Elasticsearch-compatible Query DSL for full-text search and hybrid search operations. Existing applications using the ES client can point to IndentiaDB without code changes.
 
 ```bash
 curl -X POST 'http://localhost:9200/article/_search' \

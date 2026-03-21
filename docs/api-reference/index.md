@@ -85,7 +85,7 @@ X-API-Key: <api-key>
 
 ## Response Formats
 
-All endpoints on port 7001 return JSON by default unless an `Accept` header selects a different RDF serialization format. Port 9200 always returns JSON in the Elasticsearch response envelope.
+All endpoints on port 7001 return JSON by default unless an `Accept` header selects a different RDF serialization format. Port 9200 always returns JSON in the Elasticsearch-compatible response envelope.
 
 Errors follow a consistent JSON structure:
 

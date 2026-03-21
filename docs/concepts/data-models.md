@@ -490,7 +490,7 @@ SELECT title, content FROM $context_chunks;
 
 IndentiaDB includes a built-in full-text search engine based on BM25/TF-IDF ranking. Text fields are indexed using configurable analyzers that control tokenization, normalization (lowercase, ASCII folding), stemming, and n-gram generation. Search uses BM25 scoring with optional field boosting.
 
-The Elasticsearch-compatible API on port 9200 exposes the same search capability through the Elasticsearch Query DSL, enabling drop-in compatibility with ES client libraries.
+The Elasticsearch-compatible API on port 9200 exposes the same search capability through the Elasticsearch-compatible Query DSL, enabling drop-in compatibility with ES client libraries.
 
 ### When to Use It
 

@@ -82,7 +82,7 @@ The compressed postings are stored in the same SurrealKV / TiKV key-value backen
 
 ## Elasticsearch-Compatible API (Port 9200)
 
-IndentiaDB exposes a drop-in Elasticsearch REST API. Any existing ES client library works without modification.
+IndentiaDB exposes a drop-in Elasticsearch-compatible REST API. Any existing ES client library works without modification.
 
 !!! success "Drop-In Compatibility"
     Point your existing `elasticsearch-py`, `elasticsearch-js`, `curl`-based scripts, or Kibana (read queries) at `http://your-host:9200` and they work. No client-side code changes are required.
@@ -785,7 +785,7 @@ Source: https://docs.indentiadb.nl/getting-started
 
 ## Access-Controlled Search
 
-The Elasticsearch API respects the same security model as the SPARQL and SurrealQL endpoints. Pass the JWT token in the `Authorization` header:
+The Elasticsearch-compatible API respects the same security model as the SPARQL and SurrealQL endpoints. Pass the JWT token in the `Authorization` header:
 
 ```bash
 curl -X POST http://localhost:9200/classified-documents/_search \

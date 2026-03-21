@@ -38,7 +38,7 @@ The endpoints are:
 |----------|-----|
 | SPARQL | `http://localhost:7001/sparql` |
 | GraphQL | `http://localhost:7001/graphql` |
-| Elasticsearch API | `http://localhost:9200` |
+| Elasticsearch-compatible API | `http://localhost:9200` |
 | Health | `http://localhost:7001/health` |
 | Metrics | `http://localhost:7001/metrics` |
 

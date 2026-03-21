@@ -192,7 +192,7 @@ hybrid_scorer = "bayesian"   # "bayesian" | "rrf" | "linear"
 ES_HYBRID_SCORER=bayesian indentiagraph serve
 ```
 
-### Per-Query Override (Elasticsearch API)
+### Per-Query Override (Elasticsearch-compatible API)
 
 ```json
 POST /my-index/_search

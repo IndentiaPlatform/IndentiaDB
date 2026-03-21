@@ -1,6 +1,6 @@
 # Security
 
-IndentiaDB implements a three-layer security model that applies uniformly across all query interfaces — SPARQL, SurrealQL, Elasticsearch API, REST, and WebSocket. Every request passes through all three layers before data is returned.
+IndentiaDB implements a three-layer security model that applies uniformly across all query interfaces — SPARQL, SurrealQL, Elasticsearch-compatible API, REST, and WebSocket. Every request passes through all three layers before data is returned.
 
 ---
 

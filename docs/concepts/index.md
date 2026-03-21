@@ -70,7 +70,7 @@ IndentiaDB stores all five data models in one storage engine, accessed through o
 | **Graph RDF** | SPARQL 1.2 | Knowledge graphs, ontologies, provenance, inference, semantic search | 6-permutation triple index with ZSTD compression |
 | **Graph LPG** | LPG JSON DSL | Traversals, shortest path, PageRank, connected components | CSR adjacency structure projected from RDF or documents |
 | **Vector / Embeddings** | SurrealQL HNSW operators | Similarity search, RAG pipelines, semantic retrieval | HNSW (Hierarchical Navigable Small World) index |
-| **Full-Text** | SurrealQL `@@` operator / Elasticsearch DSL | BM25 keyword search, fuzzy matching, ranked results | Inverted index with BM25/TF-IDF scoring |
+| **Full-Text** | SurrealQL `@@` operator / Elasticsearch-compatible DSL | BM25 keyword search, fuzzy matching, ranked results | Inverted index with BM25/TF-IDF scoring |
 
 > **Note:** LPG (Labeled Property Graph) is a projection of RDF or document data — it does not have a separate write path. You write RDF or document records and query the resulting LPG view.
 

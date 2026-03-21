@@ -82,7 +82,7 @@ curl -X POST http://localhost:7001/sparql \
   -d 'SELECT ?name WHERE { ?p <http://xmlns.com/foaf/0.1/name> ?name }'
 ```
 
-### First Elasticsearch Search
+### First Elasticsearch-compatible Search
 
 ```bash
 # Index a document
@@ -130,7 +130,7 @@ curl -X POST http://localhost:9200/articles/_search \
   Authentication, RBAC/ABAC, triple-level ACL, audit logging.
 
 - **[API Reference](api-reference/index.md)**
-  Complete REST, SPARQL, and Elasticsearch API documentation.
+  Complete REST, SPARQL, and Elasticsearch-compatible API documentation.
 
 - **[Deployment](deployment/index.md)**
   Docker, Kubernetes, OpenShift, and production tuning.

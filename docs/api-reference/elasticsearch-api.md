@@ -647,7 +647,7 @@ Set the `ES_HYBRID_SCORER` environment variable on the server:
 
 ## SPARQL Extensions (`_ext`)
 
-IndentiaDB extends the standard Elasticsearch search API with SPARQL-enriched query patterns via the `_ext` field.
+IndentiaDB extends the standard Elasticsearch-compatible search API with SPARQL-enriched query patterns via the `_ext` field.
 
 ### 1. SPARQL Enrich
 

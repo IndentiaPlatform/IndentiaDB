@@ -1,6 +1,6 @@
 # Live Queries & Real-Time Features
 
-IndentiaDB is reactive by design. Every data change — whether written through SurrealQL, SPARQL, or the Elasticsearch API — can trigger immediate notifications to connected WebSocket clients, fire SurrealQL event handlers, or match SPARQL-based alert rules.
+IndentiaDB is reactive by design. Every data change — whether written through SurrealQL, SPARQL, or the Elasticsearch-compatible API — can trigger immediate notifications to connected WebSocket clients, fire SurrealQL event handlers, or match SPARQL-based alert rules.
 
 ---
 
