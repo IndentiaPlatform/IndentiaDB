@@ -15,6 +15,7 @@ IndentiaDB bundles capabilities that would normally require six separate systems
 | **Semantic Inference** | RDFS/OWL forward-chaining materialization with incremental updates, `rdfs:subClassOf` / `rdfs:subPropertyOf` / `owl:sameAs` / `owl:equivalentClass` support, and configurable per-query inference toggle | [Inference](inference.md) |
 | **Bitemporal Time-Travel** | Dual-timeline queries (transaction time + valid time), `TEMPORAL AS OF`, `TEMPORAL BETWEEN`, and a configurable purge policy for regulatory retention compliance | [Bitemporal](bitemporal.md) |
 | **Geospatial** | 60-bit geospatial encoding, WKT parsing, GeoSPARQL functions (`geof:distance`, `geof:buffer`, `geof:within`), nearest-neighbour queries, and distance joins | [Geospatial](geospatial.md) |
+| **Natural Language Query (NLWeb)** | Conversational AI query interface over IndentiaDB data — ask questions in plain language, receive cited answers synthesized by Claude from the knowledge graph and document store; includes REST API, frontend widget, and MCP integration | [NLWeb](nlweb.md) |
 
 ---
 
@@ -42,3 +43,4 @@ IndentiaDB bundles capabilities that would normally require six separate systems
 - If you are **federating multiple data sources**: start with [Federation](federation.md).
 - If you need **regulatory audit trails or historical reporting**: start with [Bitemporal](bitemporal.md).
 - For **security configuration** (authentication, authorization, ACL): see the [Security](../security/index.md) section.
+- If you need a **natural language interface for non-technical users**: start with [NLWeb](nlweb.md).

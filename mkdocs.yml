@@ -117,6 +117,7 @@ nav:
     - Semantic Inference: features/inference.md
     - Bitemporal Queries: features/bitemporal.md
     - Geospatial: features/geospatial.md
+    - Natural Language Query (NLWeb): features/nlweb.md
   - Security:
     - security/index.md
     - Authentication: security/authentication.md
