@@ -34,14 +34,6 @@ By the end of this section you will be able to:
     - A running SurrealDB instance (embedded mode available)
     - `curl` for the download
 
-=== "Build from source"
-
-    - Rust 1.78 or newer (`rustup toolchain install stable`)
-    - Cargo (included with Rust)
-    - Git
-    - A C linker (`build-essential` on Debian/Ubuntu, Xcode CLI tools on macOS)
-    - Optional: `protoc` (Protocol Buffers compiler) for cluster features
-
 ---
 
 ## Installation Options
@@ -52,7 +44,6 @@ By the end of this section you will be able to:
 | **Docker Compose** | ~1 minute | Docker Compose | Local dev with persistent data |
 | **Pre-built binary** | ~1 minute | Linux/macOS | Production on bare metal or VMs |
 | **Kubernetes operator** | ~5 minutes | kubectl, Helm | Production cluster deployments |
-| **Build from source** | ~5 minutes | Rust toolchain | Development, custom patches |
 
 !!! warning "SurrealDB backend required for binary installs"
     The pre-built binary requires a SurrealDB instance. The Docker image bundles everything. If you are evaluating IndentiaDB, use Docker.

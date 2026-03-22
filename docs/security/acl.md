@@ -1,6 +1,6 @@
 # ACL Filtering
 
-ACL (Access Control List) filtering is the third layer of IndentiaDB's security model and its most distinctive feature. While graph-level ACL is standard practice in triple stores, **triple-level ACL** — per-triple access control embedded directly in RDF-star annotations — is unique to IndentiaDB among open-source databases.
+ACL (Access Control List) filtering is the third layer of IndentiaDB's security model and its most distinctive feature. While graph-level ACL is standard practice in triple stores, **triple-level ACL** — per-triple access control embedded directly in RDF-star annotations — is unique to IndentiaDB.
 
 ACL filtering is **transparent**: users never add ACL conditions to their queries, and users cannot enumerate what data they are excluded from. Filtering happens at the storage layer before query execution delivers results.
 

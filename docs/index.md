@@ -29,7 +29,7 @@ Drop the ES client into your existing stack and point it at port 9200. IndentiaD
 BM25 full-text + HNSW dense vector search fused with Bayesian probability calibration. Outperforms Reciprocal Rank Fusion (RRF) at NDCG@10: **0.9149 vs 0.8874** on SQuAD benchmarks.
 
 **Triple-Level Security**
-The only open-source database with ACL policies embedded directly in RDF-star quoted triples. Combine LDAP/OIDC/JWT authentication with RBAC/ABAC authorization and per-triple access control — including Windows SID support for Active Directory integration.
+The only database with ACL policies embedded directly in RDF-star quoted triples. Combine LDAP/OIDC/JWT authentication with RBAC/ABAC authorization and per-triple access control — including Windows SID support for Active Directory integration.
 
 **Raft High Availability**
 OpenRaft consensus, leader election, automatic failover, and log compaction. Three-node clusters with configurable replication factors. The Kubernetes operator manages StatefulSets, rolling upgrades, and cluster membership automatically.

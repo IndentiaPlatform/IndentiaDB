@@ -44,7 +44,7 @@ ACL (Access Control List) filtering restricts which data the principal can retri
 - **Graph-level ACL** — Controls which named graphs are visible to the principal. Invisible graphs are completely excluded from query planning.
 - **Triple-level ACL** — Per-triple access control using RDF-star annotations. Individual triples can carry `acl:allowedSid` metadata that restricts them to specific user or group SIDs. Triples without ACL annotations are visible to all principals with graph access.
 
-Triple-level ACL is IndentiaDB's unique security feature — no other open-source database provides per-triple access control at the storage layer.
+Triple-level ACL is IndentiaDB's unique security feature — no other database provides per-triple access control at the storage layer.
 
 See [ACL Filtering](acl.md) for the complete ACL model.
 
