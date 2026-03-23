@@ -1,7 +1,7 @@
 # Stage 1: Build Zensical docs site
 FROM nexus.lvm.local:8082/python:3.12-slim AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends git curl gcc libffi-dev && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git curl gcc libc6-dev libffi-dev pkg-config && rm -rf /var/lib/apt/lists/*
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
 ENV PATH="/root/.cargo/bin:${PATH}"
 
