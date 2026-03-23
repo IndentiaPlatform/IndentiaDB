@@ -315,3 +315,315 @@ cell_size_meters  = 1            # ~1cm precision at 60 bits
 
 !!! tip "Coordinate Order: Longitude First"
     GeoSPARQL and WKT use **longitude, latitude** order (X, Y in Cartesian terms). This is the opposite of GPS coordinate display conventions (which show latitude first). `POINT(4.9 52.37)` means longitude=4.9°E, latitude=52.37°N (Amsterdam).
+
+---
+
+## R-Tree Indexing
+
+In addition to the default 60-bit geohash encoding, IndentiaDB supports **R-tree** spatial indexing for complex geometry queries. The R-tree is built on the `rstar` crate and provides efficient operations on bounding boxes (axis-aligned bounding boxes / AABBs).
+
+### How the R-Tree Works
+
+Each geometry is stored alongside its bounding-box envelope in the R-tree. The tree organizes envelopes hierarchically:
+
+- **Leaf nodes** contain geometry entries with their bounding boxes.
+- **Internal nodes** contain the minimum bounding rectangle (MBR) that encloses all children.
+- The tree is balanced, providing **O(log n)** insertion, deletion, and query performance.
+
+### Query Types
+
+| Query | Operation | Complexity |
+|-------|-----------|-----------|
+| **Range query** | Find all geometries whose bounding box intersects a query envelope | O(log n + k) |
+| **K-nearest neighbor** | Find the K closest geometries to a point | O(log n · k) |
+| **Point containment** | Find all polygons containing a point | O(log n + k) |
+
+### Bulk Loading
+
+When loading large datasets, use bulk loading for efficient index construction. Bulk loading sorts geometries by their spatial locality before building the tree, resulting in better node utilization:
+
+```bash
+# Import with bulk-loaded spatial index
+indentiagraph import \
+  --profile prod \
+  --input places.ttl \
+  --spatial-index rtree \
+  --bulk-load
+```
+
+### Geohash vs. R-Tree
+
+| Feature | Geohash (default) | R-Tree |
+|---------|-------------------|--------|
+| Point lookups | Fast (exact code match) | O(log n) |
+| Range scans | Key-range scan + refinement | Bounding box intersection |
+| Complex polygons | Requires WKT refinement | Native envelope support |
+| KNN queries | Approximate via cell expansion | Exact via tree traversal |
+| Memory overhead | Minimal (64-bit per point) | Higher (tree structure) |
+| Recommended for | Point-heavy datasets | Mixed geometry types |
+
+---
+
+## Buffer Operations
+
+Buffer operations create a polygon around a geometry at a specified distance, useful for proximity zones and area-of-influence queries.
+
+### Creating Buffer Zones
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+# Find all residential areas within 500m of an industrial zone
+SELECT ?area ?name WHERE {
+    ex:industrial_zone geo:hasGeometry/geo:asWKT ?zoneWkt .
+
+    # Create a 500m buffer around the industrial zone
+    BIND(geof:buffer(?zoneWkt, 0.5, "km") AS ?buffer)
+
+    ?area a ex:ResidentialArea ;
+          ex:name ?name ;
+          geo:hasGeometry/geo:asWKT ?areaWkt .
+
+    FILTER(geof:intersects(?areaWkt, ?buffer))
+}
+```
+
+### Multi-Ring Buffer Analysis
+
+Create concentric buffer zones for impact analysis:
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+SELECT ?facility ?zone ?count WHERE {
+    ?facility a ex:ChemicalPlant ;
+              geo:hasGeometry/geo:asWKT ?facilityWkt .
+
+    VALUES (?zone ?radius) {
+        ("immediate" 1.0)
+        ("warning"   5.0)
+        ("advisory" 10.0)
+    }
+
+    BIND(geof:buffer(?facilityWkt, ?radius, "km") AS ?buffer)
+
+    {
+        SELECT ?buffer (COUNT(?resident) AS ?count) WHERE {
+            ?resident a ex:Resident ;
+                      geo:hasGeometry/geo:asWKT ?residentWkt .
+            FILTER(geof:within(?residentWkt, ?buffer))
+        }
+        GROUP BY ?buffer
+    }
+}
+```
+
+---
+
+## Spatial Aggregations
+
+### Counting Points in Polygons
+
+Count the number of sensors in each monitoring zone:
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+SELECT ?zone ?zone_name (COUNT(?sensor) AS ?sensor_count) WHERE {
+    ?zone a ex:MonitoringZone ;
+          ex:name ?zone_name ;
+          geo:hasGeometry/geo:asWKT ?zoneWkt .
+
+    OPTIONAL {
+        ?sensor a ex:Sensor ;
+                geo:hasGeometry/geo:asWKT ?sensorWkt .
+        FILTER(geof:within(?sensorWkt, ?zoneWkt))
+    }
+}
+GROUP BY ?zone ?zone_name
+ORDER BY DESC(?sensor_count)
+```
+
+### Area Calculations
+
+Compute the area of polygons using the `geof:area` function:
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+SELECT ?parcel ?name ?area_sqkm WHERE {
+    ?parcel a ex:LandParcel ;
+            ex:name ?name ;
+            geo:hasGeometry/geo:asWKT ?wkt .
+
+    BIND(geof:area(?wkt, "km2") AS ?area_sqkm)
+}
+ORDER BY DESC(?area_sqkm)
+```
+
+Supported area units: `"m2"` (square meters), `"km2"` (square kilometers), `"ha"` (hectares), `"ac"` (acres).
+
+---
+
+## Multi-CRS Support
+
+IndentiaDB defaults to WGS 84 (EPSG:4326) but also supports **Web Mercator (EPSG:3857)** for web mapping applications. CRS transformation is handled transparently.
+
+### Supported Coordinate Reference Systems
+
+| CRS | EPSG Code | Use Case |
+|-----|-----------|----------|
+| WGS 84 | 4326 | Geographic coordinates (default) |
+| Web Mercator | 3857 | Web mapping (OpenStreetMap, Google Maps) |
+
+### CRS Mismatch Detection
+
+When combining geometries from different CRS, IndentiaDB detects the mismatch and automatically transforms coordinates. This prevents silent errors from comparing incompatible coordinate spaces.
+
+### Explicit CRS Declaration
+
+Declare CRS in WKT using the GeoSPARQL CRS URI:
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX ex:   <http://example.org/>
+
+INSERT DATA {
+    ex:building_footprint
+        a geo:Geometry ;
+        geo:asWKT "<http://www.opengis.net/def/crs/EPSG/0/3857> POLYGON((544250 6867280, 544350 6867280, 544350 6867380, 544250 6867380, 544250 6867280))"^^geo:wktLiteral .
+}
+```
+
+Queries mixing CRS84 and EPSG:3857 geometries will transparently transform to a common CRS before computing spatial relations.
+
+### WGS 84 to Web Mercator Limits
+
+Web Mercator is undefined beyond approximately +/-85.05 degrees latitude. Geometries at extreme latitudes (e.g., polar regions) must remain in WGS 84.
+
+---
+
+## Geospatial + Temporal: Moving Objects
+
+Combine spatial and temporal queries to track objects that change location over time:
+
+### Tracking Vehicle Positions
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+# Insert timestamped positions
+INSERT DATA {
+    TEMPORAL VALID "2026-03-23T08:00:00Z" TO "2026-03-23T08:15:00Z" {
+        ex:truck_42 geo:hasGeometry [
+            a geo:Geometry ;
+            geo:asWKT "POINT(4.90 52.37)"^^geo:wktLiteral
+        ] .
+    }
+}
+```
+
+```sparql
+INSERT DATA {
+    TEMPORAL VALID "2026-03-23T08:15:00Z" TO "2026-03-23T08:30:00Z" {
+        ex:truck_42 geo:hasGeometry [
+            a geo:Geometry ;
+            geo:asWKT "POINT(4.48 51.92)"^^geo:wktLiteral
+        ] .
+    }
+}
+```
+
+### Query: Where Was a Vehicle at a Given Time?
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX ex:   <http://example.org/>
+
+SELECT ?wkt WHERE {
+    TEMPORAL AS OF VALID "2026-03-23T08:10:00Z"
+    ex:truck_42 geo:hasGeometry/geo:asWKT ?wkt .
+}
+```
+
+### Query: Which Vehicles Entered a Zone During a Time Window?
+
+```sparql
+PREFIX geo:  <http://www.opengis.net/ont/geosparql#>
+PREFIX geof: <http://www.opengis.net/def/function/geosparql/>
+PREFIX ex:   <http://example.org/>
+
+SELECT ?vehicle ?arrival WHERE {
+    TEMPORAL BETWEEN VALID "2026-03-23T06:00:00Z" AND "2026-03-23T18:00:00Z"
+
+    ?vehicle a ex:Vehicle ;
+             geo:hasGeometry/geo:asWKT ?vehicleWkt .
+    BIND(TEMPORAL_START(?vehicle) AS ?arrival)
+
+    FILTER(geof:within(
+        ?vehicleWkt,
+        "POLYGON((4.38 51.88, 4.58 51.88, 4.58 51.96, 4.38 51.96, 4.38 51.88))"^^geo:wktLiteral
+    ))
+}
+ORDER BY ?arrival
+```
+
+---
+
+## Performance Tuning
+
+### Index Configuration
+
+```toml
+[geospatial]
+enabled = true
+
+[geospatial.index]
+type             = "geohash"     # "geohash" for point-heavy, "r-tree" for polygons
+precision_bits   = 60            # Default 60; lower values = faster range scans, less precision
+cell_size_meters = 1             # Minimum cell resolution
+
+[geospatial.performance]
+use_spatial_index = true         # Always true unless debugging
+max_vertices     = 10000         # Reject overly complex geometries
+```
+
+### Query Optimization Tips
+
+1. **Add bounding-box pre-filters**: For distance queries over large datasets, add a coarse bounding-box filter before the precise distance calculation:
+
+    ```sparql
+    FILTER(?lat > 51.0 && ?lat < 53.0 && ?lon > 4.0 && ?lon < 6.0)
+    FILTER(geof:distance(?wkt, ?refWkt, "km") < 50)
+    ```
+
+2. **Limit result sets**: Always use `LIMIT` on spatial queries to avoid scanning the entire index.
+
+3. **Use `geof:within` over `geof:distance` when possible**: Polygon containment checks are faster than distance calculations because they avoid trigonometric functions.
+
+4. **Validate geometry complexity**: The `max_vertices` setting (default 10,000) rejects overly complex geometries on insert. For datasets with high-resolution coastlines or boundaries, consider simplifying geometries before import.
+
+5. **Monitor index size**: Check spatial index statistics:
+
+    ```bash
+    indentiagraph admin geo stats --profile prod
+    ```
+
+    ```json
+    {
+      "index_type": "geohash",
+      "geometry_count": 1284731,
+      "index_size_bytes": 82543104,
+      "avg_query_ms": 2.3
+    }
+    ```

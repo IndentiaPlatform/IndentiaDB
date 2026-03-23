@@ -13,7 +13,7 @@ This guide gets IndentiaDB running and walks through your first queries across a
       --name indentiadb \
       -p 7001:7001 \
       -p 9200:9200 \
-      quay.io/indentia/indentiagraph:latest
+      ghcr.io/indentiaplatform/indentiadb-trial:latest
     ```
 
     IndentiaDB starts with:
@@ -333,7 +333,7 @@ version: "3.9"
 
 services:
   indentiadb:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb
     ports:
       - "7001:7001"   # SPARQL / REST / GraphQL / WebSocket

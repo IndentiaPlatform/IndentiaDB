@@ -6,8 +6,7 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
-      - 'requirements-docs.txt'
+      - 'zensical.toml'
   workflow_dispatch:
 
 permissions:
@@ -25,8 +24,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: pip install -r requirements-docs.txt
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Zensical
+        run: |
+          git clone https://github.com/zensical/zensical.git /tmp/zensical
+          cd /tmp/zensical && python scripts/prepare.py
+          pip install /tmp/zensical
 
       - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force
+        run: zensical gh-deploy --force

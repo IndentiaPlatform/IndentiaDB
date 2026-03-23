@@ -10,13 +10,12 @@
 #   2. Trigger de private GitLab pipeline met TRIAL_EXPIRES_AT
 #   3. Wacht op completion en download de trial binary artifact
 #   4. Bouw container image met Containerfile.trial
-#   5. Push naar quay.io/indentia/indentiagraph
+#   5. Push naar ghcr.io/indentiaplatform/indentiadb-trial
 #
 # Vereiste GitHub Secrets:
 #   - GITLAB_API_TOKEN  : GitLab PAT met read_api + trigger pipeline scope
 #   - GITLAB_PROJECT_ID : Numeriek project ID van de private repo
-#   - QUAY_USERNAME     : quay.io robot account username
-#   - QUAY_PASSWORD     : quay.io robot account password
+#   - GHCR_TOKEN        : GitHub PAT met write:packages scope
 # ============================================================================
 
 name: Build Trial Image
@@ -28,9 +27,10 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
-  IMAGE: quay.io/indentia/indentiagraph
+  IMAGE: ghcr.io/indentiaplatform/indentiadb-trial
   GITLAB_URL: https://gitlab.lvm.local
 
 jobs:
@@ -132,11 +132,11 @@ jobs:
           }
           echo "Binary gedownload en geverifieerd."
 
-      - name: Login quay.io
+      - name: Login ghcr.io
         run: |
-          docker login quay.io \
-            -u "${{ secrets.QUAY_USERNAME }}" \
-            -p "${{ secrets.QUAY_PASSWORD }}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io \
+            -u "${{ github.actor }}" \
+            --password-stdin
 
       - name: Build container image
         run: |
@@ -163,4 +163,4 @@ jobs:
           rm -f artifacts.zip
           rm -rf downloaded/
           rm -rf artifacts/
-          docker logout quay.io || true
+          docker logout ghcr.io || true

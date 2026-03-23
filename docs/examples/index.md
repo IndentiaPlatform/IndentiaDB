@@ -9,11 +9,12 @@ This section contains complete, runnable examples for every query language and u
 | Category | Examples | Description |
 |----------|----------|-------------|
 | [SurrealQL](surrealql.md) | 25 | CRUD, aggregates, graph edges, transactions, events, and indexes |
-| [RDF & SPARQL](rdf-sparql.md) | 8 | Triples, named graphs, blank nodes, literal datatypes, class hierarchies |
+| [RDF & SPARQL](rdf-sparql.md) | 25 | Triples, SPARQL queries, property paths, inference, RDF-star, knowledge graph use cases |
 | [LPG Graph](lpg-graph.md) | 20 | Traversals, PageRank, shortest path, connected components, ACL integration |
 | [Enterprise Search](enterprise-search.md) | 25 | BM25 full-text, vector RAG, hybrid search, AI agent patterns |
 | [Live Data & Agents](live-data.md) | 25 | DEFINE EVENT triggers, change tracking, reactive patterns, pub/sub |
 | [Multi-Model](multi-model.md) | 5 | All models combined in unified queries and transactions |
+| [Use Cases: Search, RAG & Agents](use-cases.md) | 15 | Enterprise search with knowledge graphs, RAG pipelines, AI agent patterns |
 
 ---
 
@@ -30,16 +31,12 @@ This section contains complete, runnable examples for every query language and u
 
 ## RDF & SPARQL Examples
 
-[8 examples](rdf-sparql.md) covering the native RDF triple store:
+[25 examples](rdf-sparql.md) covering the native RDF triple store and SPARQL 1.2 engine:
 
-- Insert and query typed triples
-- Named graphs for partitioning and provenance
-- Blank nodes for anonymous resources
-- Literal datatypes (integer, float, boolean, date)
-- Language-tagged literals
-- All 8 Subject/Predicate/Object pattern combinations
-- Triple deletion
-- Class hierarchies with `rdfs:subClassOf`
+- **Basics** — insert and query typed triples, named graphs, blank nodes, literal datatypes, language-tagged literals, SPO pattern combinations, triple deletion, class hierarchies
+- **SPARQL Queries** — SELECT with FILTER and OPTIONAL, aggregates (COUNT, GROUP BY, HAVING), CONSTRUCT, ASK, property paths, SPARQL UPDATE
+- **Advanced RDF** — RDF-star provenance annotations, federated queries (SERVICE), RDFS inference, OWL reasoning (sameAs, inverseOf, symmetricProperty, transitiveProperty), hybrid SPARQL() in SurrealQL
+- **Real-World Use Cases** — organization ontology, supply chain traceability, compliance & regulatory, IT infrastructure (CMDB), medical ontology, research publications
 
 ---
 
@@ -89,6 +86,16 @@ This section contains complete, runnable examples for every query language and u
 
 ---
 
+## Use Cases: Enterprise Search, RAG & AI Agents
+
+[15 examples](use-cases.md) demonstrating real-world patterns that combine RDF knowledge graphs with search, retrieval, and agent architectures:
+
+- **Enterprise Search with Knowledge Graphs** — knowledge-enriched document search, faceted search from ontology, entity-linked search results, multi-tenant secure knowledge base, regulatory search with compliance graph
+- **RAG (Retrieval-Augmented Generation)** — RAG with RDF knowledge context, graph-guided chunk retrieval, multi-hop fact retrieval, provenance tracking with RDF-star, hybrid RAG (vector + BM25 + knowledge graph)
+- **AI Agent Patterns** — agent knowledge base with RDF ontology, tool selection via capability graph, multi-agent collaboration with shared knowledge graph, episodic + semantic agent memory, agent reasoning with graph traversal
+
+---
+
 ## Running the Examples
 
 All examples require a running IndentiaDB instance. Start one quickly with Docker:
@@ -100,7 +107,7 @@ docker run -d \
   -p 9200:9200 \
   -e SURREAL_USER=root \
   -e SURREAL_PASS=changeme \
-  quay.io/indentia/indentiagraph:latest
+  ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 Execute SurrealQL examples via the HTTP API:

@@ -3,7 +3,7 @@ services:
   # IndentiaDB 3-node Raft cluster
   # ---------------------------------------------------------------------------
   indentiadb-0:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-0
     hostname: indentiadb-0
     restart: unless-stopped
@@ -29,7 +29,7 @@ services:
       start_period: 30s
 
   indentiadb-1:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-1
     hostname: indentiadb-1
     restart: unless-stopped
@@ -55,7 +55,7 @@ services:
       start_period: 30s
 
   indentiadb-2:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-2
     hostname: indentiadb-2
     restart: unless-stopped

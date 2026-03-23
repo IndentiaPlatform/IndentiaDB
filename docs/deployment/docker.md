@@ -23,7 +23,7 @@ docker run -d \
   -e SURREAL_USER=root \
   -e SURREAL_PASS=changeme \
   -v indentiadb-data:/data \
-  quay.io/indentia/indentiagraph:latest
+  ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 Verify the instance is running:
@@ -55,7 +55,7 @@ version: "3.9"
 
 services:
   indentiadb:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb
     restart: unless-stopped
     ports:
@@ -125,7 +125,7 @@ version: "3.9"
 
 services:
   indentiadb-1:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-1
     restart: unless-stopped
     environment:
@@ -152,7 +152,7 @@ services:
           memory: 4G
 
   indentiadb-2:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-2
     restart: unless-stopped
     environment:
@@ -179,7 +179,7 @@ services:
           memory: 4G
 
   indentiadb-3:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb-3
     restart: unless-stopped
     environment:
@@ -324,7 +324,7 @@ docker run -d \
   -e SURREAL_PASS=changeme \
   -v ./indentiagraph.toml:/config/indentiagraph.toml:ro \
   -v indentiadb-data:/data \
-  quay.io/indentia/indentiagraph:latest
+  ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 Example `indentiagraph.toml`:
@@ -474,7 +474,7 @@ docker run -d \
   -e SURREAL_USER=root \
   -e SURREAL_PASS=changeme \
   -v indentiadb-data:/data \
-  quay.io/indentia/indentiagraph:latest
+  ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 ---
@@ -521,7 +521,7 @@ restart: unless-stopped
 1. Pull the new image:
 
    ```bash
-   docker pull quay.io/indentia/indentiagraph:latest
+   docker pull ghcr.io/indentiaplatform/indentiadb-trial:latest
    ```
 
 2. For Docker Compose:

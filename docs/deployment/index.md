@@ -1,6 +1,6 @@
 # Deployment Overview
 
-IndentiaDB can be deployed in several configurations, from a single container for local development to a multi-node Kubernetes cluster for enterprise production workloads. All deployment options use the same container image from `quay.io/indentia/indentiagraph`.
+IndentiaDB can be deployed in several configurations, from a single container for local development to a multi-node Kubernetes cluster for enterprise production workloads. All deployment options use the same container image from `ghcr.io/indentiaplatform/indentiadb-trial`.
 
 ---
 
@@ -90,8 +90,8 @@ The data directory contains:
 ## Container Image
 
 ```
-quay.io/indentia/indentiagraph:latest
-quay.io/indentia/indentiagraph:1.2.0
+ghcr.io/indentiaplatform/indentiadb-trial:latest
+ghcr.io/indentiaplatform/indentiadb-trial:1.2.0
 ```
 
 Versioned tags are recommended for production deployments. The `latest` tag always points to the most recent stable release.

@@ -47,7 +47,7 @@ Forward-chaining materialization with incremental updates. Entailed triples are 
 === "Docker"
 
     ```bash
-    docker run -p 7001:7001 -p 9200:9200 quay.io/indentia/indentiagraph:latest
+    docker run -p 7001:7001 -p 9200:9200 ghcr.io/indentiaplatform/indentiadb-trial:latest
     ```
 
 === "Docker Compose"

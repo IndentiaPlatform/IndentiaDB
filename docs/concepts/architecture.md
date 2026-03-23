@@ -116,7 +116,7 @@ With Docker:
 docker run -d \
   -e SURREAL_URL="tikv://pd-0:2379,pd-1:2379,pd-2:2379" \
   -p 7001:7001 -p 9200:9200 \
-  quay.io/indentia/indentiagraph:latest
+  ghcr.io/indentiaplatform/indentiadb-trial:latest
 ```
 
 In `config.toml`:
@@ -150,7 +150,7 @@ services:
     depends_on: [pd-0, pd-1, pd-2]
 
   indentiadb:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     environment:
       SURREAL_URL: "tikv://pd-0:2379,pd-1:2379,pd-2:2379"
     ports:

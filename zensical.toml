@@ -1,0 +1,166 @@
+[project]
+name = "IndentiaDB"
+description = "Multi-Model Database for Knowledge Graphs & Enterprise AI"
+site_url = "https://dbdocs.indentia.ai"
+repo_url = "https://github.com/IndentiaPlatform/IndentiaDB"
+repo_name = "IndentiaPlatform/IndentiaDB"
+edit_uri = ""
+extra_css = ["stylesheets/nlweb-chat.css"]
+extra_javascript = ["javascripts/nlweb-chat.js"]
+
+[project.theme]
+variant = "classic"
+logo = "assets/logo.png"
+favicon = "assets/logo.png"
+features = [
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.sections",
+  "navigation.expand",
+  "navigation.path",
+  "navigation.top",
+  "navigation.footer",
+  "content.code.copy",
+  "content.code.annotate",
+  "content.tabs.link",
+  "search.highlight",
+  "search.suggest",
+  "search.share",
+  "toc.follow",
+]
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "indigo"
+accent = "cyan"
+[project.theme.palette.toggle]
+icon = "lucide/moon"
+name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "cyan"
+[project.theme.palette.toggle]
+icon = "lucide/sun"
+name = "Switch to dark mode"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/IndentiaPlatform/IndentiaDB"
+
+[project.extra.version]
+provider = "mike"
+
+[project.plugins.search]
+lang = "en"
+
+# Markdown extensions — only overrides where config differs from Zensical defaults.
+# Zensical includes all pymdownx.* extensions by default.
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions."pymdownx.arithmatex"]
+generic = true
+
+[project.markdown_extensions."pymdownx.highlight"]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions."pymdownx.superfences"]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "fence_code_format" },
+]
+
+[project.markdown_extensions."pymdownx.tabbed"]
+alternate_style = true
+
+[project.markdown_extensions."pymdownx.tasklist"]
+custom_checkbox = true
+
+# Navigation
+nav = [
+  { "Home" = "index.md" },
+  { "Getting Started" = [
+    { "" = "getting-started/index.md" },
+    { "Quick Start" = "getting-started/quickstart.md" },
+    { "Configuration" = "getting-started/configuration.md" },
+    { "CLI Reference" = "getting-started/cli.md" },
+  ]},
+  { "Concepts" = [
+    { "" = "concepts/index.md" },
+    { "Architecture" = "concepts/architecture.md" },
+    { "Data Models" = "concepts/data-models.md" },
+  ]},
+  { "Query Languages" = [
+    { "" = "query-languages/index.md" },
+    { "SPARQL 1.2" = "query-languages/sparql.md" },
+    { "SurrealQL" = "query-languages/surrealql.md" },
+    { "LPG Graph Queries" = "query-languages/lpg.md" },
+    { "Hybrid Queries" = "query-languages/hybrid-queries.md" },
+  ]},
+  { "Features" = [
+    { "" = "features/index.md" },
+    { "Enterprise Search" = "features/enterprise-search.md" },
+    { "Bayesian BM25 (BB25)" = "features/bayesian-bm25.md" },
+    { "Vector Search & RAG" = "features/vector-search.md" },
+    { "Live Queries & Events" = "features/live-queries.md" },
+    { "Federated Queries" = "features/federation.md" },
+    { "Semantic Inference" = "features/inference.md" },
+    { "Bitemporal Queries" = "features/bitemporal.md" },
+    { "Geospatial" = "features/geospatial.md" },
+    { "SHACL Validation" = "features/shacl.md" },
+    { "Data Lineage" = "features/lineage.md" },
+    { "Alerting Engine" = "features/alerting.md" },
+    { "Entity Resolution" = "features/entity-resolution.md" },
+    { "Linguistic Processing" = "features/linguistic.md" },
+    { "SQL Database Federation" = "features/sql-federation.md" },
+  ]},
+  { "Security" = [
+    { "" = "security/index.md" },
+    { "Authentication" = "security/authentication.md" },
+    { "Authorization" = "security/authorization.md" },
+    { "Triple-Level ACL" = "security/acl.md" },
+  ]},
+  { "API Reference" = [
+    { "" = "api-reference/index.md" },
+    { "SPARQL & REST Endpoints" = "api-reference/sparql-endpoints.md" },
+    { "Elasticsearch API" = "api-reference/elasticsearch-api.md" },
+    { "GraphQL API" = "api-reference/graphql.md" },
+  ]},
+  { "Deployment" = [
+    { "" = "deployment/index.md" },
+    { "Docker" = "deployment/docker.md" },
+    { "Kubernetes" = "deployment/kubernetes.md" },
+    { "OpenShift / OKD" = "deployment/openshift.md" },
+    { "Kubernetes Operator" = "deployment/operator.md" },
+    { "WebAssembly Runtime" = "deployment/wasm.md" },
+  ]},
+  { "Examples" = [
+    { "" = "examples/index.md" },
+    { "SurrealQL" = "examples/surrealql.md" },
+    { "RDF & SPARQL" = "examples/rdf-sparql.md" },
+    { "LPG Graph" = "examples/lpg-graph.md" },
+    { "Enterprise Search" = "examples/enterprise-search.md" },
+    { "Live Data & Agents" = "examples/live-data.md" },
+    { "Multi-Model" = "examples/multi-model.md" },
+    { "Use Cases: Search, RAG & Agents" = "examples/use-cases.md" },
+  ]},
+]

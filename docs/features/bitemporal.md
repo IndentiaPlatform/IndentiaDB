@@ -307,3 +307,286 @@ for month_end in ["2024-01-31", "2024-02-29", "2024-03-31"]:
     for row in report[:3]:
         print(f"  {row['name']['value']} — {row['department']['value']} — {row['salary']['value']}")
 ```
+
+---
+
+## Temporal Joins (Allen's Interval Algebra)
+
+IndentiaDB supports **sequenced temporal joins** based on Allen's interval algebra. When joining two temporal entities, the engine can compute the temporal relationship between their validity intervals.
+
+### Allen's Interval Relations
+
+The following temporal relations are supported in SPARQL via the `SEQUENCED` and `NONSEQUENCED` keywords:
+
+| Relation | Meaning | Condition |
+|----------|---------|-----------|
+| `DURING` | A is entirely within B | `A.start >= B.start AND A.end <= B.end` |
+| `OVERLAPS` | A starts before B ends, ends after B starts | `A.start < B.end AND A.end > B.start` |
+| `MEETS` | A ends exactly when B starts | `A.end = B.start` |
+| `BEFORE` | A ends before B starts | `A.end < B.start` |
+| `EQUALS` | Same interval | `A.start = B.start AND A.end = B.end` |
+
+### Sequenced Join Example
+
+Find all employees who were in the same department at the same time:
+
+```sparql
+PREFIX ex: <http://example.org/>
+
+SELECT ?emp1 ?emp2 ?dept ?overlap_start ?overlap_end WHERE {
+    TEMPORAL SEQUENCED {
+        ?emp1 ex:memberOf ?dept .
+        ?emp2 ex:memberOf ?dept .
+    }
+    FILTER(?emp1 != ?emp2)
+    BIND(TEMPORAL_START(?emp1) AS ?start1)
+    BIND(TEMPORAL_END(?emp1) AS ?end1)
+    BIND(TEMPORAL_START(?emp2) AS ?start2)
+    BIND(TEMPORAL_END(?emp2) AS ?end2)
+    BIND(IF(?start1 > ?start2, ?start1, ?start2) AS ?overlap_start)
+    BIND(IF(?end1 < ?end2, ?end1, ?end2) AS ?overlap_end)
+}
+ORDER BY ?dept ?overlap_start
+```
+
+The `SEQUENCED` keyword tells the engine to compute the intersection of validity intervals for matched triples, returning only results where the intervals overlap.
+
+### Non-Sequenced Join
+
+A `NONSEQUENCED` join ignores temporal overlap — it joins on data values regardless of whether the validity intervals coincide:
+
+```sparql
+SELECT ?person ?past_role ?current_role WHERE {
+    TEMPORAL NONSEQUENCED {
+        ?person ex:hasRole ?past_role .
+    }
+    ?person ex:hasRole ?current_role .
+    FILTER(?past_role != ?current_role)
+}
+```
+
+---
+
+## SurrealQL Temporal Queries
+
+In addition to SPARQL, bitemporal data can be queried using SurrealQL with temporal extensions.
+
+### Point-in-Time Query
+
+```sql
+-- Current state (default)
+SELECT * FROM employee WHERE name = 'Alice';
+
+-- State as of a specific valid time
+SELECT * FROM employee
+    AT VALID '2024-01-15T00:00:00Z'
+    WHERE name = 'Alice';
+
+-- State as of a specific transaction time
+SELECT * FROM employee
+    AT TX '2024-06-01T00:00:00Z'
+    WHERE name = 'Alice';
+
+-- Bitemporal: what the system knew on June 1 about January 15
+SELECT * FROM employee
+    AT TX '2024-06-01T00:00:00Z'
+    AT VALID '2024-01-15T00:00:00Z'
+    WHERE name = 'Alice';
+```
+
+### Range Query
+
+```sql
+-- All salary versions valid during 2024
+SELECT salary, valid_start, valid_end FROM employee
+    BETWEEN VALID '2024-01-01' AND '2024-12-31'
+    WHERE name = 'Alice'
+    ORDER BY valid_start;
+```
+
+### Temporal Insert with Valid Time
+
+```sql
+-- Insert with explicit valid time range
+INSERT INTO employee (name, salary, department)
+    VALID '2024-01-01T00:00:00Z' TO '2024-06-30T23:59:59Z'
+    VALUES ('Alice', 75000, 'Engineering');
+
+-- Insert valid from now, no end date
+INSERT INTO employee (name, salary, department)
+    VALID '2024-07-01T00:00:00Z'
+    VALUES ('Alice', 82000, 'Engineering');
+```
+
+---
+
+## Migration from Non-Temporal Data
+
+IndentiaDB provides a migration utility to convert existing regular triples into bitemporal format without downtime.
+
+### Migration Strategy
+
+When migrating, the utility:
+
+- Sets `valid_time.start` to the current timestamp (migration time)
+- Sets `valid_time.end` to `None` (unbounded/current)
+- Sets `tx_time.start` automatically by SurrealDB
+- Sets `tx_time.end` to `None` (current version)
+
+This means all migrated data is treated as "currently valid starting from the migration time." If you need to backdate valid times, use the custom valid-time option.
+
+### Running the Migration
+
+```bash
+# Dry run — show what would be migrated
+indentiagraph admin bitemporal migrate \
+  --profile prod \
+  --dry-run
+
+# Execute migration with default settings (batch size 1000)
+indentiagraph admin bitemporal migrate \
+  --profile prod
+
+# Execute with custom batch size for large datasets
+indentiagraph admin bitemporal migrate \
+  --profile prod \
+  --batch-size 5000
+
+# Migrate with a custom valid-time start (backdate all triples)
+indentiagraph admin bitemporal migrate \
+  --profile prod \
+  --valid-from "2020-01-01T00:00:00Z"
+```
+
+### Post-Migration Verification
+
+After migration, verify the data:
+
+```sparql
+PREFIX ex: <http://example.org/>
+
+# Count triples in the bitemporal table
+SELECT (COUNT(*) AS ?count) WHERE {
+    TEMPORAL BETWEEN VALID "2000-01-01" AND "2099-12-31"
+    ?s ?p ?o .
+}
+```
+
+!!! warning "Migration is One-Way"
+    After verifying the migration, you can delete the original non-temporal triples with `indentiagraph admin bitemporal migrate --delete-originals`. This operation is irreversible.
+
+---
+
+## Temporal Aggregations
+
+Bitemporal data can be aggregated using temporal windows, combining `GROUP BY` with temporal range queries.
+
+### Salary Statistics by Year
+
+```sparql
+PREFIX ex:  <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?year (AVG(?salary) AS ?avg_salary) (COUNT(?employee) AS ?headcount) WHERE {
+    VALUES ?year { 2022 2023 2024 2025 }
+    BIND(CONCAT(STR(?year), "-06-30T23:59:59Z") AS ?mid_year)
+
+    TEMPORAL AS OF VALID ?mid_year
+    ?employee a ex:Employee ;
+              ex:salary ?salary .
+}
+GROUP BY ?year
+ORDER BY ?year
+```
+
+### Change Frequency Analysis
+
+Count how many times each employee's salary changed during a period:
+
+```sparql
+PREFIX ex: <http://example.org/>
+
+SELECT ?employee ?name (COUNT(?salary) AS ?changes) WHERE {
+    TEMPORAL BETWEEN VALID "2020-01-01" AND "2025-12-31"
+    ?employee a ex:Employee ;
+              ex:name ?name ;
+              ex:salary ?salary .
+}
+GROUP BY ?employee ?name
+HAVING(COUNT(?salary) > 1)
+ORDER BY DESC(?changes)
+```
+
+---
+
+## Compliance Patterns
+
+### GDPR Right-to-Erasure
+
+Under GDPR Article 17 (right to erasure), a data subject can request deletion of their personal data. With bitemporal storage, IndentiaDB supports two erasure strategies:
+
+**Logical erasure** (default) — close all temporal versions by setting `valid_end` and `tx_end` to the current timestamp. Historical queries still show the data existed, but current queries return nothing:
+
+```sparql
+PREFIX ex: <http://example.org/>
+
+# Logically erase all data about a person
+DELETE DATA {
+    TEMPORAL VALID "1970-01-01T00:00:00Z" {
+        ex:person_12345 ?p ?o .
+    }
+}
+```
+
+**Physical erasure** — permanently remove all temporal versions, including from transaction history. Use the admin CLI:
+
+```bash
+# GDPR physical erasure: remove all versions of a subject
+indentiagraph admin bitemporal erase \
+  --profile prod \
+  --subject "http://example.org/person_12345" \
+  --physical
+```
+
+!!! warning "Physical Erasure Is Irreversible"
+    Physical erasure removes data from all temporal dimensions, including transaction history. This means `AS OF TX` queries will also return no results. Use only for GDPR compliance.
+
+### Archiefwet (Dutch Archival Law) Patterns
+
+The Archiefwet requires government records to be retained for specific periods (typically 7, 10, or 20 years depending on the record type). Configure per-category retention:
+
+```toml
+[bitemporal.purge]
+enabled = true
+
+[[bitemporal.purge.policies]]
+graph            = "http://example.org/hr-records"
+retention_period = "7 years"
+
+[[bitemporal.purge.policies]]
+graph            = "http://example.org/financial-records"
+retention_period = "10 years"
+
+[[bitemporal.purge.policies]]
+graph            = "http://example.org/legal-records"
+retention_period = "20 years"
+```
+
+Generate an Archiefwet compliance report:
+
+```bash
+# Show retention status per named graph
+indentiagraph admin bitemporal retention-report \
+  --profile prod \
+  --format table
+```
+
+**Output:**
+
+```
+Graph                                    | Oldest Version | Retention | Status
+-----------------------------------------|----------------|-----------|--------
+http://example.org/hr-records            | 2019-03-15     | 7 years   | OK
+http://example.org/financial-records     | 2016-01-01     | 10 years  | OK
+http://example.org/legal-records         | 2008-06-30     | 20 years  | OK
+```

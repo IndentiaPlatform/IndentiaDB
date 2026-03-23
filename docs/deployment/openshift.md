@@ -87,7 +87,7 @@ metadata:
 spec:
   replicas: 3
   image:
-    repository: quay.io/indentia/indentiagraph
+    repository: ghcr.io/indentiaplatform/indentiadb-trial
     tag: latest
   auth:
     adminCredentialsSecret: indentiadb-admin-credentials
@@ -311,7 +311,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: indentiadb
-          image: quay.io/indentia/indentiagraph:latest
+          image: ghcr.io/indentiaplatform/indentiadb-trial:latest
           ports:
             - name: http
               containerPort: 7001
@@ -617,7 +617,7 @@ Mirror the image to the internal cluster registry:
 ```bash
 # Import the image into an ImageStream
 oc import-image indentiagraph:latest \
-  --from=quay.io/indentia/indentiagraph:latest \
+  --from=ghcr.io/indentiaplatform/indentiadb-trial:latest \
   --confirm \
   -n indentiadb
 

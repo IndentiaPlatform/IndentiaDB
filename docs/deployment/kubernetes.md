@@ -57,7 +57,7 @@ spec:
   replicas: 3
 
   image:
-    repository: quay.io/indentia/indentiagraph
+    repository: ghcr.io/indentiaplatform/indentiadb-trial
     tag: latest
     pullPolicy: IfNotPresent
 
@@ -309,7 +309,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: indentiadb
-          image: quay.io/indentia/indentiagraph:latest
+          image: ghcr.io/indentiaplatform/indentiadb-trial:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -571,7 +571,7 @@ The StatefulSet updates pods in reverse ordinal order (highest index first):
 ```bash
 # Update the image
 kubectl set image statefulset/indentiadb \
-  indentiadb=quay.io/indentia/indentiagraph:v1.2.0 \
+  indentiadb=ghcr.io/indentiaplatform/indentiadb-trial:v1.2.0 \
   -n indentiadb
 
 # Monitor the rollout

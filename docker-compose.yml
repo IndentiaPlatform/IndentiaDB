@@ -1,6 +1,6 @@
 services:
   indentiadb:
-    image: quay.io/indentia/indentiagraph:latest
+    image: ghcr.io/indentiaplatform/indentiadb-trial:latest
     container_name: indentiadb
     restart: unless-stopped
     ports:

@@ -307,3 +307,349 @@ The function signature: `search::bayesian(bm25_field, vector_field, weight) → 
 - [bb25 Rust reference implementation](https://github.com/instructkr/bb25)
 - Python reference: Cognica bayesian-bm25
 - IndentiaDB source: `indentiagraph-storage/src/text_index/bayesian.rs`
+
+---
+
+## Calibration Workflow
+
+Calibrating BB25 for your corpus ensures that the sigmoid parameters (`alpha`, `beta`) accurately model the relationship between BM25 scores and relevance in your specific dataset.
+
+### Step 1: Collect BM25 Score Distribution
+
+Run a representative set of queries and collect the raw BM25 scores:
+
+```bash
+# Export BM25 scores for calibration queries
+indentiagraph admin search calibrate \
+  --profile prod \
+  --queries calibration_queries.txt \
+  --output bm25_scores.jsonl \
+  --top-k 200
+```
+
+The output contains one JSON object per query-document pair:
+
+```json
+{"query": "knowledge graph federation", "doc_id": "doc_4821", "bm25_score": 8.42}
+{"query": "knowledge graph federation", "doc_id": "doc_1203", "bm25_score": 6.17}
+```
+
+### Step 2: Auto-Estimate Parameters
+
+Use the `from_scores` method which auto-estimates parameters from the score distribution:
+
+- **`beta`** = median of all BM25 scores (the score at which P(relevant) = 0.5)
+- **`alpha`** = 1 / std(scores) (how sharply the sigmoid transitions)
+- **`base_rate`** = fraction of documents above the 95th percentile (~0.05)
+
+```bash
+# Auto-estimate and save calibration profile
+indentiagraph admin search calibrate \
+  --profile prod \
+  --input bm25_scores.jsonl \
+  --save-as my_corpus_calibration
+```
+
+### Step 3: Validate with Relevance Labels (Optional)
+
+If you have relevance judgments (e.g., from user click data), use supervised training for better calibration:
+
+```bash
+# Train with relevance labels
+indentiagraph admin search calibrate \
+  --profile prod \
+  --input bm25_scores.jsonl \
+  --labels relevance_judgments.jsonl \
+  --training-mode balanced \
+  --save-as my_corpus_calibration_v2
+```
+
+The labels file contains binary relevance judgments:
+
+```json
+{"query": "knowledge graph federation", "doc_id": "doc_4821", "relevant": true}
+{"query": "knowledge graph federation", "doc_id": "doc_1203", "relevant": false}
+```
+
+### Step 4: Apply Calibration Profile
+
+```toml
+[search]
+hybrid_scorer          = "bayesian"
+calibration_profile    = "my_corpus_calibration_v2"
+```
+
+Or per-query:
+
+```json
+{
+  "retriever": {
+    "bayesian": {
+      "calibration_profile": "my_corpus_calibration_v2",
+      "retrievers": [...]
+    }
+  }
+}
+```
+
+---
+
+## A/B Testing Patterns
+
+Compare BB25 against RRF and Linear fusion in production using IndentiaDB's scorer selection.
+
+### Per-Query Scorer Selection
+
+Route a percentage of traffic to each scorer for comparison:
+
+```python
+import requests
+import random
+
+def hybrid_search(query: str, embedding: list[float]) -> dict:
+    """Execute hybrid search with A/B test scorer selection."""
+    roll = random.random()
+    if roll < 0.33:
+        scorer = "bayesian"
+    elif roll < 0.66:
+        scorer = "rrf"
+    else:
+        scorer = "linear"
+
+    body = {
+        "retriever": {
+            scorer: {
+                "weight": 0.6,
+                "rank_window_size": 100,
+                "retrievers": [
+                    {"standard": {"query": {"match": {"content": query}}}},
+                    {"knn": {"field": "embedding", "query_vector": embedding, "k": 100}},
+                ],
+            }
+        },
+        "size": 10,
+        "explain": True,
+    }
+
+    resp = requests.post(
+        "http://localhost:7001/my-index/_search",
+        json=body,
+    )
+    resp.raise_for_status()
+    result = resp.json()
+
+    # Log for offline analysis
+    return {
+        "scorer": scorer,
+        "query": query,
+        "hits": [h["_id"] for h in result["hits"]["hits"]],
+        "scores": [h["_score"] for h in result["hits"]["hits"]],
+    }
+```
+
+### Offline Evaluation with NDCG
+
+Compare scorers using a held-out evaluation set:
+
+```bash
+# Run evaluation suite against all three scorers
+indentiagraph admin search evaluate \
+  --profile prod \
+  --queries eval_queries.jsonl \
+  --labels eval_labels.jsonl \
+  --scorers bayesian,rrf,linear \
+  --metrics ndcg@10,mrr,precision@5
+```
+
+**Output:**
+
+```
+Scorer     | NDCG@10 | MRR   | P@5
+-----------|---------|-------|------
+bayesian   | 0.9149  | 0.891 | 0.842
+rrf        | 0.8470  | 0.823 | 0.780
+linear     | 0.8310  | 0.801 | 0.762
+```
+
+---
+
+## Multi-Field BB25
+
+When searching across multiple fields (title, body, metadata), each field produces its own BM25 score. BB25 calibrates each field independently and fuses them using **log-odds conjunction**.
+
+### Configuration
+
+```json
+{
+  "retriever": {
+    "bayesian": {
+      "weight": 0.6,
+      "multi_field": {
+        "title":   {"alpha": 2.5, "beta": 3.0, "field_weight": 0.4},
+        "content": {"alpha": 1.2, "beta": 6.0, "field_weight": 0.5},
+        "tags":    {"alpha": 3.0, "beta": 1.5, "field_weight": 0.1}
+      },
+      "gating": "swish",
+      "retrievers": [
+        {"standard": {"query": {"multi_match": {"query": "graph database", "fields": ["title", "content", "tags"]}}}},
+        {"knn": {"field": "embedding", "query_vector": [0.12, -0.34, 0.89], "k": 100}}
+      ]
+    }
+  }
+}
+```
+
+### How Multi-Field Fusion Works
+
+1. Each field produces a BM25 score, calibrated independently with its own `alpha`/`beta`.
+2. The calibrated probabilities are converted to logits.
+3. The **gating function** (e.g., Swish) is applied to each logit — this prevents uninformative fields (negative logit) from dominating.
+4. Logits are combined via weighted sum: `field_weight_i * gated_logit_i`.
+5. The fused logit is converted back to a probability via sigmoid.
+6. This probability is then fused with the kNN probability via balanced log-odds fusion.
+
+The `swish` gating is recommended for multi-field search because it smoothly attenuates negative evidence rather than hard-clipping it (like `relu`).
+
+---
+
+## Diagnostics and Debugging
+
+### Interpreting Explain Output
+
+Enable `"explain": true` to get per-hit score breakdowns:
+
+```json
+{
+  "_id": "doc_4821",
+  "_score": 0.892,
+  "_explanation": {
+    "value": 0.892,
+    "description": "bayesian_hybrid",
+    "details": [
+      {
+        "bm25_raw": 8.42,
+        "bm25_likelihood": 0.934,
+        "composite_prior": 0.72,
+        "bm25_posterior": 0.891,
+        "base_rate_adjusted": 0.847,
+        "bm25_logit": 1.71,
+        "bm25_logit_norm": 0.873
+      },
+      {
+        "knn_cosine": 0.82,
+        "knn_probability": 0.91,
+        "knn_logit": 2.31,
+        "knn_logit_norm": 0.912
+      },
+      {
+        "fusion_weight": 0.6,
+        "final_score": 0.892
+      }
+    ]
+  }
+}
+```
+
+### Reading the Breakdown
+
+| Field | Meaning | Healthy Range |
+|-------|---------|--------------|
+| `bm25_likelihood` | Sigmoid output from raw BM25 | 0.0 - 1.0 |
+| `composite_prior` | Prior from term freq + doc length | 0.1 - 0.9 |
+| `bm25_posterior` | Bayesian posterior (likelihood x prior) | 0.0 - 1.0 |
+| `base_rate_adjusted` | After corpus base-rate correction | Slightly lower than posterior |
+| `bm25_logit_norm` | Normalized logit (0 = neutral, 1 = strong) | 0.0 - 1.0 |
+| `knn_logit_norm` | Normalized kNN logit | 0.0 - 1.0 |
+
+### Common Issues
+
+**Issue: All BM25 posteriors are very high (>0.95)**
+
+The `alpha` parameter is too large, making the sigmoid too steep. Lower it manually or recalibrate with a larger score sample:
+
+```json
+{"retriever": {"bayesian": {"alpha": 0.5, "retrievers": [...]}}}
+```
+
+**Issue: kNN dominates despite low cosine similarity**
+
+The fusion `weight` is too high. Lower it to give BM25 more influence:
+
+```json
+{"retriever": {"bayesian": {"weight": 0.3, "retrievers": [...]}}}
+```
+
+**Issue: Documents absent from one retriever are ranked poorly**
+
+This is expected — absent documents get `logit(0.5) = 0.0` (neutral). Increase `rank_window_size` to ensure both retrievers return more candidates:
+
+```json
+{"retriever": {"bayesian": {"rank_window_size": 500, "retrievers": [...]}}}
+```
+
+---
+
+## SPARQL Integration
+
+BB25 hybrid search can be invoked from SPARQL queries using the IndentiaDB `search:` function namespace:
+
+### Basic Hybrid Search in SPARQL
+
+```sparql
+PREFIX search: <http://indentia.ai/vocab/search#>
+PREFIX ex:     <http://example.org/>
+
+SELECT ?doc ?title ?score WHERE {
+    (?doc ?score) search:bayesian (
+        "knowledge graph federation"    # query text
+        0.6                              # kNN weight
+        100                              # rank window size
+    ) .
+    ?doc ex:title ?title .
+}
+ORDER BY DESC(?score)
+LIMIT 10
+```
+
+### Hybrid Search with Filters
+
+Combine BB25 ranking with SPARQL graph pattern filters:
+
+```sparql
+PREFIX search: <http://indentia.ai/vocab/search#>
+PREFIX ex:     <http://example.org/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+
+SELECT ?doc ?title ?score ?date WHERE {
+    (?doc ?score) search:bayesian (
+        "temporal RDF querying"
+        0.5
+        200
+    ) .
+    ?doc ex:title   ?title ;
+         dcterms:date ?date ;
+         dcterms:language "en" .
+    FILTER(?date > "2024-01-01"^^xsd:date)
+}
+ORDER BY DESC(?score)
+LIMIT 20
+```
+
+### SPARQL with Explicit Calibration Parameters
+
+```sparql
+PREFIX search: <http://indentia.ai/vocab/search#>
+
+SELECT ?doc ?score WHERE {
+    (?doc ?score) search:bayesian (
+        "SPARQL optimization"   # query
+        0.5                      # weight
+        100                      # rank_window_size
+        1.5                      # alpha (optional)
+        6.0                      # beta (optional)
+        0.03                     # base_rate (optional)
+    ) .
+}
+ORDER BY DESC(?score)
+LIMIT 10
+```
