@@ -4,6 +4,8 @@
 
 Indentia.ai is a European-sovereign AI knowledge platform that fundamentally transforms how knowledge-intensive organizations make decisions and perform work.
 
+For more information about the Indentia.ai platform, visit [www.indentia.ai](https://www.indentia.ai) (coming soon).
+
 ---
 
 ## The Fragmentation of Enterprise Knowledge
@@ -45,7 +47,7 @@ This results in directly measurable impact:
 
 ## The Enterprise AI Computer
 
-Where [OpenClaw](https://github.com/nicbarker/OpenClaw) — the fastest-growing open source project ever — provides the blueprint for the personal AI computer, Indentia builds the **enterprise AI computer**: the same paradigm shift, but with capabilities like RBAC, audit trails, compliance, and data sovereignty. AI agents integrate existing enterprise software and business processes with each other, using Indentia's knowledge platform as the retrieval layer.
+Where [OpenClaw](https://github.com/nicbarker/OpenClaw) — the fastest-growing open source project ever — provides the blueprint for the personal AI computer, Indentia builds the **enterprise AI computer**: the same paradigm shift, but with capabilities like RBAC, audit trails, compliance, and data sovereignty. Indentia's Claw implementation includes two additional security layers beyond NVIDIA's enterprise-focused NemoClaw, ensuring that autonomous agents operate within strictly enforced trust boundaries. AI agents integrate existing enterprise software and business processes with each other, using Indentia's knowledge platform as the retrieval layer.
 
 ---
 
@@ -134,4 +136,3 @@ Indentia is the European answer to platforms like Glean and Palantir. Built in t
 
 The Indentia.ai platform is built on top of [IndentiaDB](index.md) — the multi-model database engine documented on this site. IndentiaDB provides the unified data layer that powers the knowledge graph, enterprise search, vector retrieval, and real-time event processing that Indentia.ai relies on.
 
-For more information about the Indentia.ai platform, visit [www.indentia.ai](https://www.indentia.ai) (coming soon).
