@@ -127,3 +127,11 @@ Indentia is the European answer to platforms like Glean and Palantir. Built in t
 
 !!! success "European Sovereignty"
     Indentia is built, operated, and hosted entirely within the European Union. No data leaves EU jurisdiction. No dependency on US cloud providers or US-controlled AI infrastructure.
+
+---
+
+## Built on IndentiaDB
+
+The Indentia.ai platform is built on top of [IndentiaDB](index.md) — the multi-model database engine documented on this site. IndentiaDB provides the unified data layer that powers the knowledge graph, enterprise search, vector retrieval, and real-time event processing that Indentia.ai relies on.
+
+For more information about the Indentia.ai platform, visit [www.indentia.ai](https://www.indentia.ai) (coming soon).

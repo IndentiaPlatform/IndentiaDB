@@ -10,7 +10,7 @@ extra_javascript = ["javascripts/nlweb-chat.js"]
 
 nav = [
   { "Home" = "index.md" },
-  { "Indentia" = "indentia.md" },
+  { "Indentia.ai Platform" = "indentia.md" },
   { "Getting Started" = [
     { "" = "getting-started/index.md" },
     { "Quick Start" = "getting-started/quickstart.md" },
