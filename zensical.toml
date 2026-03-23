@@ -1,6 +1,6 @@
 [project]
-name = "IndentiaDB"
-description = "Multi-Model Database for Knowledge Graphs & Enterprise AI"
+site_name = "IndentiaDB"
+site_description = "Multi-Model Database for Knowledge Graphs & Enterprise AI"
 site_url = "https://dbdocs.indentia.ai"
 repo_url = "https://github.com/IndentiaPlatform/IndentiaDB"
 repo_name = "IndentiaPlatform/IndentiaDB"
@@ -8,94 +8,6 @@ edit_uri = ""
 extra_css = ["stylesheets/nlweb-chat.css"]
 extra_javascript = ["javascripts/nlweb-chat.js"]
 
-[project.theme]
-variant = "classic"
-logo = "assets/logo.png"
-favicon = "assets/logo.png"
-features = [
-  "navigation.tabs",
-  "navigation.tabs.sticky",
-  "navigation.sections",
-  "navigation.expand",
-  "navigation.path",
-  "navigation.top",
-  "navigation.footer",
-  "content.code.copy",
-  "content.code.annotate",
-  "content.tabs.link",
-  "search.highlight",
-  "search.suggest",
-  "search.share",
-  "toc.follow",
-]
-
-[project.theme.font]
-text = "Inter"
-code = "JetBrains Mono"
-
-[project.theme.icon]
-repo = "fontawesome/brands/github"
-
-[[project.theme.palette]]
-scheme = "slate"
-primary = "indigo"
-accent = "cyan"
-[project.theme.palette.toggle]
-icon = "lucide/moon"
-name = "Switch to light mode"
-
-[[project.theme.palette]]
-scheme = "default"
-primary = "indigo"
-accent = "cyan"
-[project.theme.palette.toggle]
-icon = "lucide/sun"
-name = "Switch to dark mode"
-
-[[project.extra.social]]
-icon = "fontawesome/brands/github"
-link = "https://github.com/IndentiaPlatform/IndentiaDB"
-
-[project.extra.version]
-provider = "mike"
-
-[project.plugins.search]
-lang = "en"
-
-# Markdown extensions — only overrides where config differs from Zensical defaults.
-# Zensical includes all pymdownx.* extensions by default.
-[project.markdown_extensions]
-abbr = {}
-admonition = {}
-attr_list = {}
-def_list = {}
-footnotes = {}
-md_in_html = {}
-tables = {}
-
-[project.markdown_extensions.toc]
-permalink = true
-
-[project.markdown_extensions."pymdownx.arithmatex"]
-generic = true
-
-[project.markdown_extensions."pymdownx.highlight"]
-anchor_linenums = true
-line_spans = "__span"
-pygments_lang_class = true
-
-[project.markdown_extensions."pymdownx.superfences"]
-custom_fences = [
-  { name = "mermaid", class = "mermaid", format = "fence_code_format" },
-]
-
-[project.markdown_extensions."pymdownx.tabbed"]
-alternate_style = true
-
-[project.markdown_extensions."pymdownx.tasklist"]
-custom_checkbox = true
-
-# Navigation
 nav = [
   { "Home" = "index.md" },
   { "Getting Started" = [
@@ -164,3 +76,94 @@ nav = [
     { "Use Cases: Search, RAG & Agents" = "examples/use-cases.md" },
   ]},
 ]
+
+# Theme
+[project.theme]
+variant = "classic"
+logo = "assets/logo.png"
+favicon = "assets/logo.png"
+features = [
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.sections",
+  "navigation.expand",
+  "navigation.path",
+  "navigation.top",
+  "navigation.footer",
+  "content.code.copy",
+  "content.code.annotate",
+  "content.tabs.link",
+  "search.highlight",
+  "search.suggest",
+  "search.share",
+  "toc.follow",
+]
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[project.theme.icon]
+repo = "fontawesome/brands/github"
+
+[[project.theme.palette]]
+scheme = "slate"
+primary = "indigo"
+accent = "cyan"
+[project.theme.palette.toggle]
+icon = "lucide/moon"
+name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+primary = "indigo"
+accent = "cyan"
+[project.theme.palette.toggle]
+icon = "lucide/sun"
+name = "Switch to dark mode"
+
+# Extra
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/IndentiaPlatform/IndentiaDB"
+
+[project.extra.version]
+provider = "mike"
+
+# Plugins
+[project.plugins.search]
+lang = "en"
+
+# Markdown extensions
+# Zensical includes all pymdownx.* extensions by default.
+# Only overrides where config differs from defaults.
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+tables = {}
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions."pymdownx.arithmatex"]
+generic = true
+
+[project.markdown_extensions."pymdownx.highlight"]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions."pymdownx.superfences"]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "fence_code_format" },
+]
+
+[project.markdown_extensions."pymdownx.tabbed"]
+alternate_style = true
+
+[project.markdown_extensions."pymdownx.tasklist"]
+custom_checkbox = true
