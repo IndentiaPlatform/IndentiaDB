@@ -57,7 +57,7 @@ build:
 
 deploy:
   stage: deploy
-  image: ${NEXUS_REGISTRY}/bitnami/git:latest
+  image: ${NEXUS_REGISTRY}/alpine/git:latest
   needs:
     - job: build
       artifacts: false
