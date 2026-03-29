@@ -1,6 +1,9 @@
 # SPARQL, GraphQL, WebSocket, and REST Endpoints
 
-All endpoints described on this page are available on port **7001**. Authentication is required on all endpoints; see the [API Overview](index.md#authentication) for details.
+All endpoints described on this page are available on port **7001**. Authentication is required on all endpoints in production deployments; see the [API Overview](index.md#authentication) for details.
+
+!!! note "Trial image"
+    The trial image (`ghcr.io/indentiaplatform/indentiadb-trial`) runs without authentication by default — all endpoints are accessible without credentials. The `-u root:changeme` flags shown in examples are included for consistency with production usage and are ignored in trial mode.
 
 ---
 
@@ -53,14 +56,23 @@ The `Accept` header controls the serialization format:
 
 | Accept Header | Format | Use Case |
 |---------------|--------|----------|
-| `application/sparql-results+json` | JSON | SELECT and ASK |
-| `application/sparql-results+xml` | XML | SELECT and ASK |
+| `application/sparql-results+json` | JSON | SELECT, ASK, CONSTRUCT, DESCRIBE |
+| `application/sparql-results+xml` | XML | SELECT, ASK |
 | `text/csv` | CSV | SELECT (tabular export) |
 | `text/tab-separated-values` | TSV | SELECT (tabular export) |
-| `text/turtle` | Turtle | CONSTRUCT and DESCRIBE |
-| `application/n-triples` | N-Triples | CONSTRUCT and DESCRIBE |
-| `application/ld+json` | JSON-LD | CONSTRUCT and DESCRIBE |
-| `application/rdf+xml` | RDF/XML | CONSTRUCT and DESCRIBE |
+| `application/x-ndjson` | NDJSON | SELECT (streaming) |
+| `text/turtle` | Turtle | CONSTRUCT, DESCRIBE |
+| `application/n-triples` | N-Triples | CONSTRUCT, DESCRIBE |
+
+!!! note "CONSTRUCT and DESCRIBE output format"
+    CONSTRUCT and DESCRIBE queries return a JSON array of N-Triples strings when `Accept: application/sparql-results+json` is used:
+    ```json
+    [
+      "<http://example.org/alice> <http://xmlns.com/foaf/0.1/name> \"Alice\"",
+      "<http://example.org/bob> <http://xmlns.com/foaf/0.1/name> \"Bob\""
+    ]
+    ```
+    For native RDF serialization, use `Accept: text/turtle` or `Accept: application/n-triples` — the response will be one triple per line in N-Triples format (which is a valid Turtle subset).
 
 ### SELECT Example
 
@@ -176,7 +188,16 @@ INSERT DATA {
 '
 ```
 
-A successful update returns HTTP 204 No Content.
+A successful update returns HTTP 200 with a JSON confirmation body:
+
+```json
+{
+  "success": true,
+  "message": "Update applied successfully",
+  "snapshot_index": 1,
+  "affected_triples": 7
+}
+```
 
 ### INSERT DATA
 
@@ -242,21 +263,45 @@ The SPARQL 1.1 Graph Store HTTP Protocol allows reading and writing entire graph
 
 ### GET — Read a Graph
 
+Retrieve a named graph in the desired RDF serialization:
+
+```bash
+# N-Triples (default)
+curl -u root:changeme \
+  -H "Accept: application/n-triples" \
+  "http://localhost:7001/data?graph=http://example.org/employees"
+
+# Turtle
+curl -u root:changeme \
+  -H "Accept: text/turtle" \
+  "http://localhost:7001/data?graph=http://example.org/employees"
+
+# TriG (includes GRAPH <iri> { ... } wrapper for named graphs)
+curl -u root:changeme \
+  -H "Accept: application/trig" \
+  "http://localhost:7001/data?graph=http://example.org/employees"
+```
+
 Retrieve the default graph:
 
 ```bash
 curl -u root:changeme \
-  -H "Accept: text/turtle" \
+  -H "Accept: application/n-triples" \
   http://localhost:7001/data
 ```
 
-Retrieve a named graph:
+Supported `Accept` headers for GET:
 
-```bash
-curl -u root:changeme \
-  -H "Accept: text/turtle" \
-  "http://localhost:7001/data?graph=http://example.org/employees"
-```
+| Accept Header | Response `Content-Type` |
+|---------------|------------------------|
+| `application/n-triples` _(default)_ | `application/n-triples; version=1.2` |
+| `application/n-triples-star` | `application/n-triples-star; version=1.2` |
+| `text/turtle` | `text/turtle; version=1.2` |
+| `application/trig` | `application/trig; version=1.2` |
+| `application/rdf+xml` | `application/rdf+xml; version=1.2` |
+| `application/ld+json` | `application/ld+json; version=1.2` |
+
+The `version=1.2` parameter signals RDF 1.2 conformance — clients that understand quoted triples and `rdf:JSON` can use this to opt in to RDF-star-aware parsing.
 
 ### PUT — Replace a Graph
 
@@ -415,34 +460,15 @@ Validate RDF data against SHACL (Shapes Constraint Language) shapes.
 
 ### Request
 
-Send the SHACL shapes graph as Turtle in the request body. The validation is run against the current contents of the triple store.
+Send a JSON body with a `shapes` field containing the SHACL shapes as a Turtle string. The validation is run against the current contents of the triple store.
 
 ```bash
 curl -u root:changeme \
   -X POST http://localhost:7001/shacl/validate \
-  -H "Content-Type: text/turtle" \
-  -d '
-@prefix sh:   <http://www.w3.org/ns/shacl#> .
-@prefix ex:   <http://example.org/> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-
-ex:PersonShape
-    a sh:NodeShape ;
-    sh:targetClass ex:Person ;
-    sh:property [
-        sh:path foaf:name ;
-        sh:minCount 1 ;
-        sh:datatype xsd:string ;
-        sh:message "Every Person must have exactly one foaf:name of type xsd:string" ;
-    ] ;
-    sh:property [
-        sh:path foaf:age ;
-        sh:datatype xsd:integer ;
-        sh:minInclusive 0 ;
-        sh:maxInclusive 150 ;
-    ] .
-'
+  -H "Content-Type: application/json" \
+  -d '{
+    "shapes": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix ex: <http://example.org/> .\n@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\nex:PersonShape\n    a sh:NodeShape ;\n    sh:targetClass ex:Person ;\n    sh:property [ sh:path foaf:name ; sh:minCount 1 ; sh:datatype xsd:string ] ."
+  }'
 ```
 
 ### Response — Conforms
@@ -452,7 +478,15 @@ When the data satisfies all shapes:
 ```json
 {
   "conforms": true,
-  "results": []
+  "results": [],
+  "stats": {
+    "focus_nodes_validated": 2,
+    "constraints_checked": 4,
+    "violations": 0,
+    "warnings": 0,
+    "infos": 0,
+    "duration_ms": 3
+  }
 }
 ```
 
@@ -675,23 +709,37 @@ curl -u root:changeme http://localhost:7001/health
 
 ```json
 {
-  "status": "ok",
-  "role": "leader",
-  "cluster": {
-    "nodes": 3,
-    "leader": "indentiadb-0.indentiadb-headless.indentiadb.svc.cluster.local",
-    "quorum": true
-  },
+  "status": "healthy",
+  "role": "standalone",
+  "node_id": 1,
+  "snapshot_index": 0,
+  "current_term": 0,
+  "cluster_members": [
+    { "node_id": 1, "address": "0.0.0.0:7001", "role": "standalone", "reachable": true }
+  ],
+  "replication_lag": null,
+  "index_loaded": true,
   "uptime_seconds": 86400,
-  "version": "1.2.0"
+  "embedded_surreal": {
+    "url": "surrealkv:///data/surrealdb",
+    "namespace": "indentiagraph",
+    "database": "alerting",
+    "ready": true,
+    "projection_bootstrapped": true,
+    "last_projected_log_index": 0,
+    "active_listener_count": 0,
+    "listener_role": "Standalone"
+  }
 }
 ```
+
+In a 3-node HA cluster the `cluster_members` array lists all peer nodes, `role` reflects `"leader"` or `"follower"`, and `replication_lag` shows the follower's lag behind the leader in log entries.
 
 ### Status Values
 
 | Value | Meaning |
 |-------|---------|
-| `ok` | Node is healthy and serving requests |
+| `healthy` | Node is healthy and serving requests |
 | `starting` | Node is initializing or joining the cluster |
 | `degraded` | Node is operational but the cluster has reduced capacity |
 | `error` | Node has encountered a fatal error |
@@ -718,50 +766,38 @@ curl -u root:changeme http://localhost:7001/metrics
 ### Sample Response
 
 ```
-# HELP indentiadb_queries_total Total number of queries executed
-# TYPE indentiadb_queries_total counter
-indentiadb_queries_total{type="sparql_select"} 15234
-indentiadb_queries_total{type="sparql_update"} 4821
-indentiadb_queries_total{type="graphql"} 9012
-indentiadb_queries_total{type="surrealql"} 44001
+# HELP indentiagraph_indentiagraph_queries_total Total number of queries executed
+# TYPE indentiagraph_indentiagraph_queries_total counter
+indentiagraph_indentiagraph_queries_total 15234
 
-# HELP indentiadb_query_duration_seconds Query execution time
-# TYPE indentiadb_query_duration_seconds histogram
-indentiadb_query_duration_seconds_bucket{type="sparql_select",le="0.005"} 12000
-indentiadb_query_duration_seconds_bucket{type="sparql_select",le="0.01"} 14500
-indentiadb_query_duration_seconds_bucket{type="sparql_select",le="0.025"} 15100
-indentiadb_query_duration_seconds_bucket{type="sparql_select",le="0.05"} 15200
-indentiadb_query_duration_seconds_bucket{type="sparql_select",le="+Inf"} 15234
-indentiadb_query_duration_seconds_sum{type="sparql_select"} 45.2
-indentiadb_query_duration_seconds_count{type="sparql_select"} 15234
+# HELP indentiagraph_indentiagraph_query_duration_seconds Query execution time
+# TYPE indentiagraph_indentiagraph_query_duration_seconds histogram
+indentiagraph_indentiagraph_query_duration_seconds_bucket{le="0.005"} 12000
+indentiagraph_indentiagraph_query_duration_seconds_bucket{le="0.01"} 14500
+indentiagraph_indentiagraph_query_duration_seconds_bucket{le="0.025"} 15100
+indentiagraph_indentiagraph_query_duration_seconds_bucket{le="0.05"} 15200
+indentiagraph_indentiagraph_query_duration_seconds_bucket{le="+Inf"} 15234
+indentiagraph_indentiagraph_query_duration_seconds_sum 45.2
+indentiagraph_indentiagraph_query_duration_seconds_count 15234
 
-# HELP indentiadb_active_connections Current number of active connections
-# TYPE indentiadb_active_connections gauge
-indentiadb_active_connections 42
+# HELP indentiagraph_indentiagraph_cluster_size Number of cluster members
+# TYPE indentiagraph_indentiagraph_cluster_size gauge
+indentiagraph_indentiagraph_cluster_size 1
 
-# HELP indentiadb_storage_bytes Total storage used on disk
-# TYPE indentiadb_storage_bytes gauge
-indentiadb_storage_bytes 5368709120
-
-# HELP indentiadb_cache_hits_total Total number of query cache hits
-# TYPE indentiadb_cache_hits_total counter
-indentiadb_cache_hits_total 8821
-
-# HELP indentiadb_cache_misses_total Total number of query cache misses
-# TYPE indentiadb_cache_misses_total counter
-indentiadb_cache_misses_total 6413
+# HELP indentiagraph_indentiagraph_is_leader Whether this node is the Raft leader
+# TYPE indentiagraph_indentiagraph_is_leader gauge
+indentiagraph_indentiagraph_is_leader 1
 ```
 
 ### Key Metrics
 
-| Metric | Type | Labels | Description |
-|--------|------|--------|-------------|
-| `indentiadb_queries_total` | Counter | `type` | Total queries by type (sparql_select, sparql_update, graphql, surrealql) |
-| `indentiadb_query_duration_seconds` | Histogram | `type` | Query execution latency distribution |
-| `indentiadb_active_connections` | Gauge | — | Current number of open connections |
-| `indentiadb_storage_bytes` | Gauge | — | Total bytes used on disk |
-| `indentiadb_cache_hits_total` | Counter | — | Query result cache hits |
-| `indentiadb_cache_misses_total` | Counter | — | Query result cache misses |
+| Metric | Type | Description |
+|--------|------|-------------|
+| `indentiagraph_indentiagraph_queries_total` | Counter | Total queries executed |
+| `indentiagraph_indentiagraph_query_duration_seconds` | Histogram | Query execution latency distribution |
+| `indentiagraph_indentiagraph_cluster_size` | Gauge | Number of cluster members |
+| `indentiagraph_indentiagraph_is_leader` | Gauge | 1 if this node is the Raft leader, 0 otherwise |
+| `indentiagraph_indentiagraph_leader_elections_total` | Counter | Total Raft leader elections |
 
 ---
 

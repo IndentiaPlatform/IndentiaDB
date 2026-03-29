@@ -41,13 +41,23 @@ Expected response:
 
 ```json
 {
-  "status": "ok",
-  "version": "0.1.0",
-  "cluster": {
-    "enabled": false,
-    "node_id": "standalone"
-  },
-  "uptime_seconds": 3
+  "status": "healthy",
+  "role": "standalone",
+  "node_id": 1,
+  "snapshot_index": 0,
+  "current_term": 0,
+  "cluster_members": [
+    { "node_id": 1, "address": "0.0.0.0:7001", "role": "standalone", "reachable": true }
+  ],
+  "replication_lag": null,
+  "index_loaded": true,
+  "uptime_seconds": 3,
+  "embedded_surreal": {
+    "url": "surrealkv:///data/surrealdb",
+    "namespace": "indentiagraph",
+    "database": "alerting",
+    "ready": true
+  }
 }
 ```
 
@@ -122,12 +132,13 @@ Expected response:
 curl -X POST http://localhost:7001/update \
   -H "Content-Type: application/sparql-update" \
   -d '
-PREFIX ex: <http://example.org/>
+PREFIX ex:  <http://example.org/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 INSERT DATA {
   GRAPH <http://example.org/provenance> {
     << ex:alice ex:knows ex:bob >> ex:since "2020-01-15"^^xsd:date ;
-                                   ex:confidence 0.95 .
+                                   ex:confidence "0.95"^^xsd:decimal .
   }
 }'
 ```
@@ -138,51 +149,8 @@ INSERT DATA {
 
 SurrealQL is the SQL-like multi-model query language for document, relational, and graph data.
 
-### Create Documents
-
-```bash
-curl -X POST http://localhost:7001/sql \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "
-      CREATE person:alice CONTENT {
-        name: \"Alice\",
-        department: \"Engineering\",
-        salary: 95000,
-        skills: [\"Rust\", \"SPARQL\", \"Python\"]
-      };
-
-      CREATE person:bob CONTENT {
-        name: \"Bob\",
-        department: \"Engineering\",
-        salary: 88000,
-        skills: [\"Go\", \"Kubernetes\", \"SQL\"]
-      };
-
-      RELATE person:alice->knows->person:bob
-        SET since = time::now(), strength = 0.9;
-    "
-  }'
-```
-
-### Query Documents
-
-```bash
-# Select with filter
-curl -X POST http://localhost:7001/sql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "SELECT name, salary FROM person WHERE department = \"Engineering\" ORDER BY salary DESC"}'
-
-# Graph traversal — who does Alice know?
-curl -X POST http://localhost:7001/sql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "SELECT ->knows->person.name AS colleagues FROM person:alice"}'
-
-# Aggregate
-curl -X POST http://localhost:7001/sql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "SELECT department, math::mean(salary) AS avg_salary FROM person GROUP BY department"}'
-```
+!!! note "SurrealQL HTTP endpoint — planned feature"
+    The `POST /sql` HTTP endpoint is not yet available in IndentiaDB. SurrealDB is used internally for alerting, licensing, and RDF projection. A user-facing SurrealQL endpoint is planned for a future release. See the [SurrealQL reference](../query-languages/surrealql.md) for the full language guide.
 
 ---
 
@@ -340,9 +308,10 @@ services:
       - "9200:9200"   # Elasticsearch-compatible API
     volumes:
       - indentiadb-data:/data
-      - ./config.toml:/etc/indentiadb/config.toml:ro
+      - ./config/indentiagraph.toml:/config/indentiagraph.toml:ro
     environment:
-      INDENTIADB_CONFIG: /etc/indentiadb/config.toml
+      SURREAL_USER: root
+      SURREAL_PASS: changeme
       LOG_LEVEL: info
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7001/health"]

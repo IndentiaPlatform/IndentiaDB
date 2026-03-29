@@ -320,7 +320,41 @@ WHERE {
 
 ## Example 10: RDF-star — Quoted Triples (Insert + Query)
 
-RDF-star allows annotating triples with metadata without reification overhead. The syntax uses `<< subject predicate object >>` to reference a triple as a value.
+### Why RDF-star matters: reification vs quoted triples
+
+In RDF 1.1, adding metadata to a triple — a confidence score, a source, a timestamp — required **reification**: creating a blank node that indirectly represents the triple, then attaching properties to that blank node. To express "Alice knows Bob with 90% confidence, according to source X", you needed 6 extra triples:
+
+```sparql
+# RDF 1.1 — 6 triples to annotate one fact
+INSERT DATA {
+    _:stmt1 a               rdf:Statement ;
+            rdf:subject     ex:alice ;
+            rdf:predicate   foaf:knows ;
+            rdf:object      ex:bob .
+    _:stmt1 ex:confidence   "0.9"^^xsd:decimal .
+    _:stmt1 ex:source       ex:SourceX .
+}
+```
+
+This is verbose, fragile (blank nodes cannot be referenced across graphs), and query-hostile: finding all high-confidence facts requires joining through the reification structure.
+
+**RDF 1.2 (RDF-star) solves this with one line:**
+
+```sparql
+# RDF 1.2 — 1 quoted triple with inline annotation
+INSERT DATA {
+    << ex:alice foaf:knows ex:bob >>
+        ex:confidence "0.9"^^xsd:decimal ;
+        ex:source     ex:SourceX .
+}
+```
+
+`<< ex:alice foaf:knows ex:bob >>` is a **quoted triple** — the triple itself becomes a first-class value that you can attach properties to directly. No blank nodes, no joins, no fragility.
+
+!!! tip "The practical impact"
+    A knowledge graph with 10 million annotated facts needs **60 million triples** under RDF 1.1 reification. Under RDF-star, it needs **10 million** — the base facts — plus the annotation triples directly attached. Queries are simpler, storage is smaller, and the intent is immediately readable.
+
+See the [RDF-star Guide](../concepts/rdf-star.md) for a deeper treatment of use cases, patterns, and the comparison with other approaches.
 
 ```sparql
 PREFIX foaf:  <http://xmlns.com/foaf/0.1/>
@@ -730,6 +764,32 @@ SELECT ?label (LANGDIR(?label) AS ?direction) WHERE {
     FILTER (LANG(?label) = "ar")
 }
 ```
+
+### rdf:JSON Literals
+
+RDF 1.2 introduces `rdf:JSON` as a first-class datatype for embedding arbitrary JSON values in RDF literals:
+
+```sparql
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX ex:  <http://example.org/>
+
+INSERT DATA {
+    ex:sensor42 ex:latestReading
+        "{\"temperature\": 21.3, \"unit\": \"celsius\", \"ts\": 1711620000}"^^rdf:JSON .
+}
+```
+
+Query and filter on the JSON literal value:
+
+```sparql
+SELECT ?sensor ?reading WHERE {
+    ?sensor ex:latestReading ?reading .
+    FILTER (DATATYPE(?reading) = rdf:JSON)
+}
+```
+
+!!! note "Elasticsearch indexing"
+    When IndentiaDB auto-maps RDF triples to Elasticsearch indices, fields backed by `rdf:JSON` literals are indexed as `keyword` (exact match) rather than `text` (full-text analyzed). This preserves the raw JSON string for filtering and aggregation without tokenization artifacts.
 
 ### SEMIJOIN and ANTIJOIN Operators
 

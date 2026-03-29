@@ -21,6 +21,7 @@ nav = [
     { "" = "concepts/index.md" },
     { "Architecture" = "concepts/architecture.md" },
     { "Data Models" = "concepts/data-models.md" },
+    { "RDF-Star" = "concepts/rdf-star.md" },
   ]},
   { "Query Languages" = [
     { "" = "query-languages/index.md" },

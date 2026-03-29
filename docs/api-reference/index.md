@@ -100,13 +100,13 @@ HTTP status codes follow standard semantics:
 
 | Code | Meaning |
 |------|---------|
-| 200 | Success |
-| 201 | Created |
-| 204 | No Content (DELETE success) |
+| 200 | Success — all write operations (SPARQL UPDATE, Graph Store PUT/POST/DELETE, GraphQL mutations) return 200 with a JSON confirmation body |
+| 201 | Created — Elasticsearch `/_doc` index operations |
 | 400 | Bad Request (invalid query or body) |
 | 401 | Unauthorized |
 | 403 | Forbidden |
 | 404 | Not Found |
+| 406 | Not Acceptable (unsupported Accept header) |
 | 409 | Conflict |
 | 500 | Internal Server Error |
 | 503 | Service Unavailable (cluster not ready) |

@@ -2,6 +2,9 @@
 
 IndentiaDB implements a three-layer security model that applies uniformly across all query interfaces — SPARQL, SurrealQL, Elasticsearch-compatible API, REST, and WebSocket. Every request passes through all three layers before data is returned.
 
+!!! note "Trial image"
+    The trial image (`ghcr.io/indentiaplatform/indentiadb-trial`) ships without an authentication configuration file, so all endpoints are accessible without credentials by default. Authentication (OIDC, LDAP, JWT) works exactly the same in the trial as in production — mount a configuration file with your chosen provider to enable it. See the [Quick Configuration Reference](#quick-configuration-reference) below for a minimal example.
+
 ---
 
 ## The Three Layers

@@ -11,6 +11,9 @@ This guide covers deploying IndentiaDB using Docker, from a single-container qui
 
 ---
 
+!!! note "Trial image"
+    `ghcr.io/indentiaplatform/indentiadb-trial` is a rolling 2-month evaluation build. The expiry date is printed in the startup logs. License keys for unlimited use can be requested at [indentia.ai](https://indentia.ai).
+
 ## Quick Start
 
 Run a single IndentiaDB instance with default settings:

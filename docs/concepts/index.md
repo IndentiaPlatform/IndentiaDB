@@ -138,6 +138,7 @@ Client write (SurrealQL CREATE / SPARQL INSERT DATA)
 
 - [Architecture](architecture.md) — Storage backends, RDF index internals, query execution pipeline, Raft HA
 - [Data Models](data-models.md) — Each model in depth with full working examples
+- [RDF-star Guide](rdf-star.md) — Quoted triples, reification comparison, provenance, ACL, and temporal patterns
 
 ---
 

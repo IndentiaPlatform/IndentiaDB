@@ -2,9 +2,8 @@
 
 SurrealQL is IndentiaDB's primary query language. It handles relational tables, document CRUD, graph edge traversals, vector similarity search, full-text search, transactions, event triggers, and schema definitions — all in one language.
 
-All examples below work against any running IndentiaDB instance. Send queries to:
-- **HTTP:** `POST http://localhost:7001/sql` with `Content-Type: application/x-www-form-urlencoded` (body: `query=...`) or `Content-Type: text/plain`
-- **WebSocket:** `ws://localhost:7001/rpc` using the SurrealDB WebSocket RPC protocol
+!!! note "SurrealQL HTTP endpoint — planned feature"
+    The `POST /sql` HTTP endpoint is not yet available in IndentiaDB. SurrealDB is currently used internally (alerting, licensing, RDF projection) and does not expose a public user-facing HTTP or WebSocket interface. A user-facing SurrealQL endpoint is planned for a future release.
 
 ---
 

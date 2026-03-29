@@ -19,8 +19,15 @@ IndentiaDB eliminates that complexity.
 
 ## Feature Highlights
 
-**SPARQL 1.2 & RDF 1.2**
-Full W3C Working Draft compliance. RDF-star (quoted triples), SEMIJOIN/ANTIJOIN, TripleTerms, named graphs, and federated SERVICE queries — all natively supported.
+**SPARQL 1.2 & RDF 1.2 — with RDF-star**
+Full W3C Working Draft compliance, including RDF-star quoted triples. In RDF 1.1, annotating a single fact with a confidence score and source required 6 extra triples and a blank node (reification). RDF-star does it in one line:
+
+```sparql
+# One line instead of six:
+<< ex:alice ex:worksAt ex:Acme >> ex:confidence 0.9 ; ex:source ex:HRSystem .
+```
+
+Named graphs, SEMIJOIN/ANTIJOIN, TripleTerms, federated SERVICE queries — all natively supported. See the [RDF-star Guide](concepts/rdf-star.md).
 
 **Elasticsearch-Compatible API**
 Drop the ES client into your existing stack and point it at port 9200. IndentiaDB responds to the same REST API: `_search`, `_bulk`, `_doc`, KNN search, index mappings. No code changes required.
