@@ -4,9 +4,9 @@ stages:
   - deploy
 
 include:
-  - project: 'indentia/indentia-gitops-htz'
-    ref: main
-    file: 'ci/cosign-sign.yml'
+  - project: 'indentia/ci-standards'
+    ref: 'v1.0.0'
+    file: '/templates/supply-chain.yml'
 
 variables:
   QUAY_REGISTRY: "quay.lvm.local"
@@ -83,7 +83,7 @@ deploy:
     - if: $CI_COMMIT_BRANCH == "main"
 
 sign-image:
-  extends: .cosign_sign
+  extends: .sign_and_attest
   needs: [build]
   variables:
     SIGN_IMAGES: "${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA} ${DOCS_IMAGE_NAME}:latest"
