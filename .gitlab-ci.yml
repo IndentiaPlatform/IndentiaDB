@@ -23,6 +23,8 @@ build:
   variables:
     STORAGE_DRIVER: vfs
   before_script:
+    - buildah rm --all 2>/dev/null || true
+    - buildah rmi --all --force 2>/dev/null || true
     - |
       AUTH_QUAY=$(echo -n "$QUAY_USERNAME:$QUAY_PASSWORD" | base64 -w0)
       AUTH_NEXUS=$(echo -n "$NEXUS_USERNAME:$NEXUS_PASSWORD" | base64 -w0)
@@ -39,7 +41,7 @@ build:
         --storage-driver ${STORAGE_DRIVER} \
         --tls-verify=false \
         --signature-policy "$HOME/policy.json" \
-        --layers \
+        --layers=false \
         -f Containerfile \
         -t "${DOCS_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}" \
         -t "${DOCS_IMAGE_NAME}:latest" \
