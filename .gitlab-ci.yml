@@ -22,9 +22,12 @@ build:
   image: ${NEXUS_REGISTRY}/buildah/stable:latest
   variables:
     STORAGE_DRIVER: vfs
+  tags:
+    - docker
   before_script:
     - buildah rm --all 2>/dev/null || true
     - buildah rmi --all --force 2>/dev/null || true
+    - rm -rf /home/gitlab-runner/builds/.buildah-storage 2>/dev/null || true
     - |
       AUTH_QUAY=$(echo -n "$QUAY_USERNAME:$QUAY_PASSWORD" | base64 -w0)
       AUTH_NEXUS=$(echo -n "$NEXUS_USERNAME:$NEXUS_PASSWORD" | base64 -w0)
