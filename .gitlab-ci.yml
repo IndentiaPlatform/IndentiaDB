@@ -5,7 +5,7 @@ stages:
 
 include:
   - project: 'indentia/ci-standards'
-    ref: 'v1.0.0'
+    ref: 'v1.0.1'
     file: '/templates/supply-chain.yml'
 
 variables:
