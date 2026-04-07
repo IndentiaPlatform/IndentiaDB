@@ -12,6 +12,10 @@ For more information about the Indentia.ai platform, visit [www.indentia.ai](htt
 
 In modern organizations, critical business knowledge is scattered across dozens of systems — SharePoint, Slack, CRM, databases, documents, and more. Employees spend hours every day searching, comparing, and verifying information. But search is not the end goal — it is the starting point of value creation.
 
+This challenge is accelerating. The AI market is growing exponentially, and as AI integration in business processes deepens — chatbots, workflow automation, agent-based applications — the demand for a reliable, sovereign knowledge foundation grows with it. Organizations don't just need AI capabilities; they need a platform that connects AI to their actual enterprise knowledge with full traceability and control. Indentia is built as that platform: a complete AI knowledge engine that turns fragmented data into autonomous, verifiable work.
+
+The rise of edge AI reinforces this need. Organizations cannot allow sensitive data to leave their premises — hospitals, banks, defense, government. Nearly half of enterprises already run hybrid cloud/edge architectures. For high-volume, privacy-sensitive tasks like document processing, speech-to-text, and local code assistance, on-premise inference is not just viable but essential. Indentia's [flexible deployment model](#compliance-and-flexible-deployment) — including fully air-gapped on-premise installations — is designed for exactly this reality: the hybrid model where cloud handles complex agentic reasoning while local infrastructure processes sensitive data at the edge.
+
 ---
 
 ## Consolidation and Accessibility
