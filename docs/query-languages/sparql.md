@@ -1,6 +1,6 @@
 # SPARQL 1.2 Reference
 
-IndentiaDB implements the SPARQL 1.1 specification plus the SPARQL 1.2 Working Draft (through January 29, 2026 changes). This reference covers every supported feature with complete working examples.
+IndentiaDB implements the SPARQL 1.1 specification plus the SPARQL 1.2 Working Draft (through the 9 April 2026 update), aligned with the RDF 1.2 Candidate Recommendation (7 April 2026). This reference covers every supported feature with complete working examples.
 
 ---
 
@@ -27,7 +27,14 @@ IndentiaDB implements the SPARQL 1.1 specification plus the SPARQL 1.2 Working D
 | `text/tab-separated-values` | TSV | SELECT |
 | `text/turtle` | Turtle | CONSTRUCT, DESCRIBE |
 | `application/n-triples` | N-Triples | CONSTRUCT, DESCRIBE |
+| `application/n-triples;profile="http://www.w3.org/ns/rdf-canon#c14n"` | N-Triples Canonical (RDF 1.2 C14N) | CONSTRUCT, DESCRIBE |
 | `application/ld+json` | JSON-LD | CONSTRUCT, DESCRIBE |
+
+Canonical N-Triples output (`ntriples-c14n`) applies the escaping and
+language-tag normalization rules from the RDF 1.2 Candidate Recommendation
+(Section 3 and the related RDF Dataset Canonicalization spec). Select it via
+the `profile` parameter on the `Accept` header, or by passing
+`?format=ntriples-c14n` as a query parameter.
 | `application/rdf+xml` | RDF/XML | CONSTRUCT, DESCRIBE |
 | `application/n-quads` | N-Quads | CONSTRUCT with named graphs |
 | `text/n3` | N3 (Notation3) | CONSTRUCT, DESCRIBE |
@@ -815,7 +822,7 @@ The `sameValue` operator implements three-valued comparison semantics consistent
 
 ---
 
-## SPARQL 1.2 Working Draft Changes (January 29, 2026)
+## SPARQL 1.2 Working Draft Changes (through 9 April 2026)
 
 The following changes from the SPARQL 1.2 Working Draft are implemented:
 
@@ -826,6 +833,8 @@ The following changes from the SPARQL 1.2 Working Draft are implemented:
 | Issue #266 | Property path evaluation: BFS with cycle detection | Implemented |
 | Issue #267 | Property path cardinality semantics fixes | Implemented |
 | Issue #290 | Extend cardinality fix for `OPTIONAL` patterns | Implemented |
+| RDF 1.2 CR | N-Triples Canonical (C14N) serialization — language tag lowercasing, canonical escaping | Implemented (2026-04-11) |
+| RDF 1.2 §3.3.1 | RDF Reference IRI validation (strict mode) | Implemented (2026-04-11) |
 
 ---
 

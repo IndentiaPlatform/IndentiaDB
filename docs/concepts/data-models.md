@@ -200,7 +200,7 @@ DELETE task WHERE status = "done" AND story_points < 5;
 
 ### What It Is
 
-IndentiaDB stores RDF triples natively in a 6-permutation index (see [Architecture](architecture.md)). The SPARQL 1.2 endpoint supports all SPARQL 1.1 features plus RDF-star quoted triples, the `TRIPLE()` function family, and the latest Working Draft changes through January 2026.
+IndentiaDB stores RDF triples natively in a 6-permutation index (see [Architecture](architecture.md)). The SPARQL 1.2 endpoint supports all SPARQL 1.1 features plus RDF-star quoted triples, the `TRIPLE()` function family, and the latest Working Draft changes through the 9 April 2026 update (aligned with the RDF 1.2 Candidate Recommendation of 7 April 2026).
 
 An RDF triple is a statement of fact: `(subject, predicate, object)`. Named graphs group triples into logical partitions for provenance tracking, access control, or organizational separation.
 

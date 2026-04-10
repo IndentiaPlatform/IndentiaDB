@@ -308,7 +308,7 @@ WHERE {
 | Query complexity | 3-way join through blank node | Direct pattern match |
 | SPARQL syntax | Complex `?stmt rdf:subject ?s ...` | `<< ?s ?p ?o >> ?prop ?val` |
 | Storage overhead (10M facts, 3 annotations each) | ~60M triples | ~10M base + 30M annotation triples |
-| Interoperability | Wide (RDF 1.1 is universal) | Growing — RDF 1.2 is W3C Working Draft |
+| Interoperability | Wide (RDF 1.1 is universal) | Growing — RDF 1.2 is a W3C Candidate Recommendation (7 April 2026) |
 
 ---
 
@@ -351,6 +351,45 @@ SELECT ?label (LANG(?label) AS ?lang) (LANGDIR(?label) AS ?dir) WHERE {
 }
 ```
 
+### Language tag canonicalization (BCP47)
+
+Per the RDF 1.2 Candidate Recommendation, language tag comparisons are
+case-insensitive, and the canonical form of a tag is all lowercase. The
+direction component of a directional language-tagged string follows the
+same rule.
+
+IndentiaDB preserves the original casing that was written into the store
+for regular output, but the **canonical N-Triples serialization** (see
+[SPARQL endpoints — Response formats](../api-reference/sparql-endpoints.md#response-formats))
+emits tags in their canonical form:
+
+| Stored | Canonical N-Triples output |
+|--------|----------------------------|
+| `"chat"@EN-GB` | `"chat"@en-gb` |
+| `"مرحبا"@AR--RTL` | `"مرحبا"@ar--rtl` |
+| `"Hallo"@De-At--Ltr` | `"Hallo"@de-at--ltr` |
+
+Use the canonical form whenever byte-identical output is required — e.g.
+for hashing, signing, or diffing across environments.
+
+### RDF Reference IRI validation (§3.3.1)
+
+RDF 1.2 Section 3.3.1 defines the notion of an *RDF Reference IRI*: an IRI
+that is suitable as a stable resource identifier and that must survive
+reference resolution unchanged. When strict validation is enabled (via
+`IriValidator::strict_rdf12()` in the builder library), the following are
+flagged:
+
+- IRIs with `.` or `..` path segments (error — would collapse during
+  reference resolution)
+- Missing authority component in hierarchical schemes such as `http`/`https`
+  (error)
+- Non-lowercase scheme names (warning — canonical form is lowercase)
+- Empty path segments (warning)
+
+This validation runs during index builds when strict mode is enabled; it
+does **not** reject writes on the live SPARQL endpoint.
+
 ### Content-Type version signalling
 
 When IndentiaDB returns RDF from the Graph Store Protocol (`GET /data`), the response includes `version=1.2` in the `Content-Type` header — for example:
@@ -379,4 +418,5 @@ RDF 1.2-aware clients can use this to enable quoted-triple parsing. RDF 1.1 clie
 - [SPARQL 1.2 Reference](../query-languages/sparql.md) — Full query language with RDF-star examples
 - [Lineage & Provenance](../features/lineage.md) — Production provenance pipeline built on RDF-star
 - [ACL Filtering](../security/acl.md) — Per-triple access control using RDF-star
-- [W3C RDF 1.2 Working Draft](https://www.w3.org/TR/rdf12-concepts/) — Specification
+- [W3C RDF 1.2 Candidate Recommendation](https://www.w3.org/TR/rdf12-concepts/) — Specification (7 April 2026)
+- [W3C SPARQL 1.2 Working Draft](https://www.w3.org/TR/sparql12-query/) — Query language (9 April 2026)

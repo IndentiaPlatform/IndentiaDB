@@ -63,6 +63,38 @@ The `Accept` header controls the serialization format:
 | `application/x-ndjson` | NDJSON | SELECT (streaming) |
 | `text/turtle` | Turtle | CONSTRUCT, DESCRIBE |
 | `application/n-triples` | N-Triples | CONSTRUCT, DESCRIBE |
+| `application/n-triples;profile="http://www.w3.org/ns/rdf-canon#c14n"` | N-Triples Canonical (C14N) | CONSTRUCT, DESCRIBE — deterministic output |
+
+!!! tip "Canonical N-Triples (RDF 1.2 C14N)"
+    The canonical N-Triples variant implements the escaping rules from the
+    RDF 1.2 Candidate Recommendation (7 April 2026) and the related RDF
+    Dataset Canonicalization spec. It differs from plain N-Triples in two
+    ways:
+
+    1. **Canonical character escaping** — `\b`, `\t`, `\n`, `\f`, `\r`,
+       `\"`, `\\` as named escapes; all other C0/C1 controls, DEL, and
+       XML 1.1 invalid characters as `\uXXXX`.
+    2. **Language tag canonicalization** — language tags are lowercased
+       per BCP47 (`"chat"@EN-GB` → `"chat"@en-gb`), including the
+       direction component of directional language-tagged strings
+       (`"مرحبا"@AR--RTL` → `"مرحبا"@ar--rtl`).
+
+    Select it via either:
+
+    - **Accept header with profile parameter:**
+      ```bash
+      curl -u root:changeme \
+        -H 'Accept: application/n-triples;profile="http://www.w3.org/ns/rdf-canon#c14n"' \
+        "http://localhost:7001/sparql?query=..."
+      ```
+    - **Query parameter:**
+      ```bash
+      curl -u root:changeme \
+        "http://localhost:7001/sparql?format=ntriples-c14n&query=..."
+      ```
+
+    Use canonical form when you need byte-for-byte reproducible output for
+    hashing, signing, or diff-based change detection.
 
 !!! note "CONSTRUCT and DESCRIBE output format"
     CONSTRUCT and DESCRIBE queries return a JSON array of N-Triples strings when `Accept: application/sparql-results+json` is used:
