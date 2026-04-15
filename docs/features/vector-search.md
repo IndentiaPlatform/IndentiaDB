@@ -1,6 +1,23 @@
 # Vector Search & RAG
 
-IndentiaDB ships a native HNSW vector index with first-class support for retrieval-augmented generation (RAG) pipelines. Vectors are stored, indexed, and queried within the same ACID transaction boundary as all other data models — no separate vector database required.
+IndentiaDB ships a native vector index (HNSW *and* IVF) with first-class support for retrieval-augmented generation (RAG) pipelines. Vectors are stored, indexed, and queried within the same ACID transaction boundary as all other data models — no separate vector database required.
+
+## What is and isn't automatic
+
+It helps to be precise about what "vector search" means in IndentiaDB:
+
+| Capability | Status | Notes |
+|------------|--------|-------|
+| Insert pre-computed embeddings as RDF literals or SurrealQL fields | ✅ | The embedding lives next to your data as a JSON-array literal or numeric array field |
+| ANN search via `vec:approxNear*` SPARQL functions | ✅ | Index is automatically used when the predicate matches an indexed field |
+| ANN search via SurrealQL `<\|n,EF\|>` operator | ✅ | See [Vector Search via SurrealQL](#vector-search-via-surrealql) below |
+| K-NN over LPG node properties | ✅ | See [Vector K-NN in LPG](#vector-k-nn-in-lpg) below |
+| Hybrid scoring (BM25 + vector) via the Elasticsearch `_search` API | ✅ | Bayesian fusion (`ES_HYBRID_SCORER=bayesian`) gives NDCG@10 0.9149 |
+| Query-time text → vector via an external embedder | ✅ | Pass `model_id` + `model_text` to a KNN retriever; resolved by the configured `InferenceRegistry` |
+| **Auto-embed every literal on insert** | ❌ | Embeddings are not generated server-side. Pre-compute them in your ingest pipeline (e.g. via `embeddingsvc`). |
+| **Graph-structure embeddings (node2vec, GraphSAGE, GNN)** | ❌ | Not built in. Treat the graph as the input to an external embedder; write the resulting vectors back as triples or LPG properties. |
+
+In short: IndentiaDB is **vector-aware**, not **auto-vectorizing**. The graph is gevectoriseerd in the sense that any literal or LPG property can carry a vector and be queried with native operators — but generating those vectors is a separate concern owned by the ingest pipeline.
 
 ---
 
@@ -155,10 +172,31 @@ LIMIT 10;
 
 ## Vector Search via SPARQL
 
-For RDF data, use IndentiaDB's `vec:approxNearCosine` (and `vec:approxNearL2`, `vec:approxNearDot`) SPARQL filter functions:
+IndentiaDB exposes vector similarity as native SPARQL filter functions under the
+namespace `<http://graph.indentia.ai/vector/functions#>` (conventionally bound
+to the `vec:` prefix).
+
+### Available functions
+
+| Function | Backed by index? | Use case |
+|----------|------------------|----------|
+| `vec:approxNearCosine(?vec, queryVec)` | ✅ HNSW / IVF | Approximate cosine similarity (most common for normalized embeddings) |
+| `vec:approxNearL2(?vec, queryVec)` | ✅ HNSW / IVF | Approximate Euclidean distance |
+| `vec:approxNearInnerProduct(?vec, queryVec)` | ✅ HNSW / IVF | Approximate dot-product similarity |
+| `vec:cosineSimilarity(?a, ?b)` | ❌ exact | Per-row exact computation, no index lookup |
+| `vec:l2Distance(?a, ?b)` | ❌ exact | Per-row exact computation, no index lookup |
+| `vec:innerProduct(?a, ?b)` | ❌ exact | Per-row exact computation, no index lookup |
+
+The `approxNear*` variants are pushed down into the vector index (HNSW or IVF
+depending on the configured backend) and return only the top-k candidates. The
+plain similarity functions evaluate per-binding without any index lookup — use
+them only when the surrounding pattern has already been narrowed to a small
+candidate set.
+
+### Example query
 
 ```sparql
-PREFIX vec:  <http://indentiadb.nl/vector#>
+PREFIX vec:  <http://graph.indentia.ai/vector/functions#>
 PREFIX ex:   <http://example.org/>
 
 SELECT ?doc ?score WHERE {
@@ -170,14 +208,15 @@ ORDER BY DESC(?score)
 LIMIT 10
 ```
 
-The `$query_vector` parameter is passed as a JSON array in the SPARQL request:
+The `$query_vector` parameter is passed as a JSON-array literal in the SPARQL
+request:
 
 ```bash
 curl -X POST http://localhost:7001/sparql \
   -H "Content-Type: application/sparql-query" \
   -H "Accept: application/sparql-results+json" \
-  -d 'PREFIX vec: <http://indentiadb.nl/vector#>
-      PREFIX ex: <http://example.org/>
+  -d 'PREFIX vec: <http://graph.indentia.ai/vector/functions#>
+      PREFIX ex:  <http://example.org/>
       SELECT ?doc ?score WHERE {
           ?doc ex:embedding ?vec .
           BIND(vec:approxNearCosine(?vec, "[0.12, -0.45, 0.88]") AS ?score)
@@ -186,6 +225,35 @@ curl -X POST http://localhost:7001/sparql \
       ORDER BY DESC(?score) LIMIT 10'
 ```
 
+### Vector index DDL via SPARQL
+
+Vector indexes are created and managed through SPARQL extension statements.
+This keeps the vector layer in lockstep with the RDF data model — no separate
+admin API or external orchestration is needed.
+
+```sparql
+-- Create an index on a class + property
+CREATE VECTOR INDEX docs_emb
+  ON ex:Document
+  FIELD ex:embedding
+  METRIC cosine
+  DIMENSION 768
+  LISTS 100;
+
+-- Inspect indexes
+SHOW VECTOR INDEXES;
+
+-- Rebuild after a backfill or metric change
+REBUILD VECTOR INDEX docs_emb;
+
+-- Remove an index (data triples remain untouched)
+DROP VECTOR INDEX docs_emb;
+```
+
+`METRIC` accepts `cosine`, `l2`, or `inner_product`. `DIMENSION` must match the
+embedding-model output exactly. `LISTS` controls IVF coarse-cluster count
+(rule of thumb: `sqrt(N)`); HNSW indexes ignore this parameter.
+
 ---
 
 ## Hybrid Text + Vector Search in SPARQL
@@ -193,7 +261,7 @@ curl -X POST http://localhost:7001/sparql \
 Combine `vec:approxNearCosine` with `ql:contains-word` for documents that match both a keyword condition and are semantically similar to the query embedding:
 
 ```sparql
-PREFIX vec:  <http://indentiadb.nl/vector#>
+PREFIX vec:  <http://graph.indentia.ai/vector/functions#>
 PREFIX ql:   <http://qlever.cs.uni-freiburg.de/builtin-functions/>
 PREFIX ex:   <http://example.org/>
 
@@ -556,3 +624,112 @@ print(answer)
 
 !!! tip "Why Knowledge Graph RAG?"
     Plain vector RAG retrieves semantically similar text but loses structured relationships and provenance. KG RAG adds: (1) explicit fact triples with confidence weights, (2) source citations the LLM can reference, (3) structured relationship traversal for multi-hop reasoning, and (4) temporal validity from bitemporal annotations (see [Bitemporal](bitemporal.md)).
+
+---
+
+## Vector K-NN in LPG
+
+In addition to the HNSW-backed vector search via SurrealQL and SPARQL, IndentiaDB supports K-nearest-neighbour queries **directly on LPG node properties**. This is useful when embeddings are stored as node properties in the LPG projection (e.g., derived from RDF literals or document fields).
+
+### How It Works
+
+The `VectorKnn` query kind performs a brute-force scan over nodes that have the specified property, computes a similarity/distance score for each, and returns the top-k results above the (optional) threshold. No separate index is required — the scan runs in-process on the in-memory CSR graph.
+
+For high-cardinality graphs, consider filtering with `filter.label` to reduce the candidate set before scoring.
+
+### Request
+
+```json
+POST /lpg/query
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "kind": {
+    "VectorKnn": {
+      "property": "embedding",
+      "query_vector": [0.021, -0.039, 0.085, "..."],
+      "k": 10,
+      "metric": "cosine",
+      "threshold": 0.75,
+      "filter": {
+        "label": "Document",
+        "properties": { "language": "en" }
+      }
+    }
+  },
+  "return_fields": ["id", "title", "author"]
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `property` | string | Yes | Node property name storing the embedding |
+| `query_vector` | array of float | Yes | The query embedding vector |
+| `k` | integer | Yes | Maximum number of results to return |
+| `metric` | string | No | `"cosine"` (default), `"l2"`, or `"dot"` |
+| `threshold` | float | No | Minimum score cutoff: cosine ≥ threshold; L2 ≤ threshold |
+| `filter.label` | string | No | Restrict candidates to nodes with this label |
+| `filter.properties` | object | No | Additional property equality filters on candidates |
+
+### Response
+
+```json
+{
+  "rows": [
+    { "id": "http://example.org/doc1", "title": "Graph Databases", "author": "Smith", "score": 0.94 },
+    { "id": "http://example.org/doc2", "title": "Knowledge Graphs", "author": "Jones", "score": 0.88 }
+  ],
+  "total": 2
+}
+```
+
+The `score` field is always included:
+- **cosine** / **dot**: higher is better
+- **l2**: lower is better (Euclidean distance)
+
+### Example: Semantic Document Search in LPG
+
+```bash
+# First, insert documents with embeddings via SPARQL
+curl -X POST http://localhost:7001/update \
+  -H "Content-Type: application/sparql-update" \
+  -d '
+  PREFIX ex: <http://example.org/>
+  INSERT DATA {
+    ex:doc1 a ex:Document ;
+            ex:title     "Graph Databases" ;
+            ex:embedding "[0.1, 0.2, 0.3]" .
+    ex:doc2 a ex:Document ;
+            ex:title     "Knowledge Graphs" ;
+            ex:embedding "[0.15, 0.25, 0.28]" .
+  }'
+
+# Then query by vector similarity in the LPG
+curl -X POST http://localhost:7001/lpg/query \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": {
+      "VectorKnn": {
+        "property": "embedding",
+        "query_vector": [0.12, 0.22, 0.31],
+        "k": 5,
+        "metric": "cosine",
+        "threshold": 0.8,
+        "filter": { "label": "http://example.org/Document" }
+      }
+    },
+    "return_fields": ["id", "title"]
+  }'
+```
+
+### Combining VectorKnn with Graph Algorithms
+
+A powerful pattern is to retrieve semantically similar nodes with `VectorKnn`, then run a graph algorithm on the resulting subgraph. For example:
+
+1. `VectorKnn` → find the 50 most similar `Article` nodes to a query embedding
+2. Extract node IDs from the response
+3. `POST /algo/pagerank` → rank those 50 nodes by their graph-structural importance
+
+This combines semantic relevance (vector similarity) with structural authority (PageRank) for superior result ranking.
