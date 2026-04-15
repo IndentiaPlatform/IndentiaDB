@@ -72,15 +72,96 @@ or
 
 ---
 
-## Algorithms
+## LPG Query Kinds
 
-| Algorithm | `kind` Key | Description |
-|-----------|-----------|-------------|
-| Traverse | `Traverse` | BFS traversal from a start node |
-| Shortest path | `ShortestPath` | Dijkstra shortest path between two nodes |
-| PageRank | `PageRank` | Compute PageRank scores |
-| Connected components | `ConnectedComponents` | Find disconnected subgraphs |
-| Neighbor count | `NeighborCount` | Count in/out/total degree of a node |
+The `kind` field selects the operation. IndentiaDB supports two families:
+
+1. **Built-in traversal queries** — sent to `POST /lpg/query`
+2. **Named graph algorithms** — sent to `POST /algo/:name` (35 algorithms)
+
+### Built-in Query Kinds
+
+| Kind key | Description |
+|----------|-------------|
+| `Traverse` | BFS traversal from a start node with hop limits |
+| `ShortestPath` | Dijkstra shortest path between two nodes |
+| `PageRank` | Compute PageRank scores (built-in variant) |
+| `ConnectedComponents` | Find weakly connected subgraphs |
+| `NeighborCount` | Count in/out/total degree of a node |
+| `VectorKnn` | K-nearest-neighbour search on a node embedding property |
+
+### Named Graph Algorithms (`POST /algo/:name`)
+
+35 algorithms covering community detection, centrality, structural analysis, paths, flow, spanning trees, matching, and random walks. See the [Graph Algorithms Reference](../features/graph-algorithms.md) for the complete list with parameters and output formats.
+
+Quick examples:
+
+```bash
+# PageRank
+POST /algo/pagerank  {"config": {"damping_factor": 0.85}}
+
+# Louvain community detection
+POST /algo/louvain   {"config": {"resolution": 1.0}}
+
+# Dijkstra single-source
+POST /algo/dijkstra  {"config": {"source": "http://example.org/alice"}}
+
+# Betweenness centrality
+POST /algo/betweenness  {}
+
+# Dinic max-flow
+POST /algo/dinic  {"config": {"source": "http://example.org/src", "sink": "http://example.org/sink"}}
+```
+
+---
+
+## VectorKnn Query Kind
+
+Find the `k` nearest nodes by comparing a query vector against an embedding stored in a node property.
+
+```json
+POST /lpg/query
+
+{
+  "kind": {
+    "VectorKnn": {
+      "property": "embedding",
+      "query_vector": [0.021, -0.039, 0.085],
+      "k": 10,
+      "metric": "cosine",
+      "threshold": 0.75,
+      "filter": {
+        "label": "Document",
+        "properties": { "language": "en" }
+      }
+    }
+  },
+  "return_fields": ["id", "title"]
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `property` | string | Yes | Node property holding the embedding (array of f32) |
+| `query_vector` | array | Yes | The query embedding (same dimension as stored) |
+| `k` | integer | Yes | Maximum number of results |
+| `metric` | string | No | `"cosine"` (default), `"l2"`, or `"dot"` |
+| `threshold` | float | No | Minimum score: cosine ≥ threshold, L2 ≤ threshold |
+| `filter` | object | No | Optional label and property pre-filter |
+
+**Response:**
+
+```json
+{
+  "rows": [
+    { "id": "http://example.org/doc1", "title": "Graph Databases", "score": 0.94 },
+    { "id": "http://example.org/doc2", "title": "Knowledge Graphs", "score": 0.88 }
+  ],
+  "total": 2
+}
+```
+
+The `score` field is always present: cosine similarity (higher = better) or L2 distance (lower = better).
 
 ---
 

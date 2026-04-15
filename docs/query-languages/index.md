@@ -10,7 +10,9 @@ IndentiaDB supports six query interfaces. Each targets a different data model an
 |---------------|----------|------|----------|
 | **SPARQL 1.2** | `POST /sparql` (query), `POST /update` (update) | 7001 | RDF triple store, knowledge graphs, ontologies, federated queries, RDF-star provenance |
 | **SurrealQL** | `POST /sql` (WebSocket `ws://`) | 7001 | Relational tables, document CRUD, graph edge traversals, vector search, full-text search, transactions, LIVE queries |
-| **LPG JSON DSL** | `POST /lpg/query` | 7001 | Graph algorithms: traversal, shortest path, PageRank, connected components, neighbor count |
+| **LPG JSON DSL** | `POST /lpg/query` | 7001 | 35 graph algorithms: traversal, shortest path, PageRank, community detection, centrality, flow, and more |
+| **OpenCypher** | `POST /lpg/cypher` | 7001 | Graph pattern matching, CREATE/MERGE mutations, aggregations (COUNT/SUM/AVG/COLLECT) |
+| **Locy** | `POST /locy/query` | 7001 | Datalog logic programming: recursive rules, transitive closure, stratified negation, FOLD aggregations |
 | **GraphQL** | `GET/POST /graphql` | 7001 | GraphQL clients, API gateways, frontend integrations |
 | **Elasticsearch-compatible Query DSL** | `GET/POST /_search`, `POST /:index/_search` | 9200 | Full-text search, hybrid BM25+vector, ES client libraries, Kibana-compatible analytics |
 | **Hybrid (SPARQL inside SurrealQL)** | `POST /sql` | 7001 | Cross-model queries: fetch RDF data and use results in document/relational queries |
@@ -26,13 +28,28 @@ IndentiaDB supports six query interfaces. Each targets a different data model an
 | RDF triple pattern | SPARQL | `SELECT ?name WHERE { ?p a foaf:Person ; foaf:name ?name }` |
 | Provenance annotation | SPARQL (RDF-star) | `<< ex:alice foaf:knows ex:bob >> ex:confidence 0.95 .` |
 | Graph traversal (edge-based) | SurrealQL | `SELECT ->knows->person.name FROM person:alice` |
-| Graph traversal (algorithm) | LPG JSON DSL | `{"kind": {"PageRank": {"damping": 0.85, ...}}}` |
-| Shortest path | LPG JSON DSL | `{"kind": {"ShortestPath": {"start": {...}, "target": {...}}}}` |
+| Graph traversal (algorithm) | LPG JSON DSL | `POST /algo/pagerank` with `{"config": {"damping_factor": 0.85}}` |
+| Shortest path | LPG JSON DSL | `POST /algo/dijkstra` with `{"config": {"source": "node_a"}}` |
+| Community detection | LPG JSON DSL | `POST /algo/louvain` with `{"config": {"resolution": 1.0}}` |
+| Graph pattern match | OpenCypher | `MATCH (n:Person)-[:KNOWS]->(m) RETURN n.name, m.name` |
+| Create nodes/edges | OpenCypher | `CREATE (n:Person {name: "Alice"})-[:KNOWS]->(m:Person {name: "Bob"})` |
+| Transitive reachability | Locy | `CREATE RULE reachable AS MATCH (n)-[:E]->(m) … YIELD KEY n, m` |
+| Recursive inference | Locy | Multi-clause rules with `IS rule TO var` joins |
+| Vector K-NN in LPG | LPG JSON DSL | `POST /lpg/query` with `{"kind": {"VectorKnn": {"property": "embedding", "k": 10}}}` |
 | Vector similarity search | SurrealQL | `WHERE embedding <\|10,200\|> $query_vec` |
 | Full-text search | SurrealQL | `WHERE title @1@ "knowledge graph"` |
 | Full-text search (ES API) | ES Query DSL | `{"query": {"match": {"title": "knowledge graph"}}}` |
 | Hybrid BM25 + vector | ES Query DSL | `{"query": {...}, "knn": {...}}` |
 | Cross-model: RDF + document | Hybrid SurrealQL | `LET $rdf = SPARQL("SELECT ?s WHERE {…}"); SELECT … FROM employee WHERE id IN $rdf` |
+
+---
+
+## New in v0.2.0
+
+- **[OpenCypher](cypher.md)** — MATCH, CREATE, MERGE, SET, DELETE, aggregations over the LPG projection
+- **[Locy](locy.md)** — Datalog logic programming: recursive rules, stratified negation, FOLD aggregations
+- **LPG `VectorKnn`** — K-nearest-neighbour search on node embedding properties (see [Vector Search](../features/vector-search.md))
+- **35 graph algorithms** via `POST /algo/:name` (see [Graph Algorithms](../features/graph-algorithms.md))
 
 ---
 

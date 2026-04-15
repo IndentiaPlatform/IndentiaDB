@@ -884,3 +884,117 @@ curl -u root:changeme \
 curl -u root:changeme \
   -X DELETE http://localhost:7001/alerts/high-latency
 ```
+
+---
+
+## Holonic Four-Graph — `/holonic/*`
+
+Native implementation of Cagle's holonic model on named graphs.
+The router is mounted only when the server is started with
+`[holonic] enabled=true` (see the [Holonic feature page](../features/holonic.md)).
+`/holonic/health` is **always mounted** and is in the authentication
+bypass list so orchestrators and probes can poll it without
+credentials.
+
+### Readiness — `GET /holonic/health`
+
+```bash
+curl -s http://localhost:7001/holonic/health
+```
+
+Response shapes:
+
+| Status | Body | Meaning |
+|--------|------|---------|
+| `200` | `{"available": true, "default_tenant": "acme"}` | Service attached, ready to accept CRUD |
+| `503` | `Holonic service not configured (enable via AppState::enable_holonic)` | Feature not enabled on this server |
+
+### Holon CRUD — `POST/GET /holonic/holons`
+
+```bash
+# Declare a holon in the tenant registry graph
+curl -u root:changeme \
+  -X POST "http://localhost:7001/holonic/holons?tenant=acme" \
+  -H 'Content-Type: application/json' \
+  -d '{"iri":"https://id.indentia.ai/identity/person/acme/leon",
+       "label":"Leon de Vries",
+       "member_of":"https://id.indentia.ai/identity/org/acme/indentia"}'
+
+# List every holon in the tenant
+curl -u root:changeme \
+  "http://localhost:7001/holonic/holons?tenant=acme"
+
+# Get one holon's detail including every layer
+curl -u root:changeme \
+  "http://localhost:7001/holonic/holons/<url-encoded-iri>?tenant=acme"
+```
+
+### Layer writes
+
+Four layer endpoints share the same body shape:
+`{"turtle": "<valid Turtle>", "graph_slug": "optional-slug"}`.
+The server parses `@prefix` directives via `oxttl` and emits
+canonical N-Triples into the target named graph.
+
+| Layer | Endpoint | Typical use |
+|-------|----------|-------------|
+| Interior | `POST /holonic/holons/{iri}/interior` | A-Box facts from a specific source (CRM, LDAP, WhatsApp) |
+| Boundary | `POST /holonic/holons/{iri}/boundary` | SHACL shape acting as membrane |
+| Context  | `POST /holonic/holons/{iri}/context`  | Membership + PROV-O events |
+| Projection | `POST /holonic/holons/{iri}/projection` | Derived views |
+
+### Portals — `POST/GET /holonic/portals`
+
+Portals encode cross-holon transforms as RDF rather than code.
+A `cga:TransformPortal` triple in the source holon's boundary
+graph declares target + a SPARQL CONSTRUCT that translates the
+source into the target's schema.
+
+```bash
+# Register a portal
+curl -u root:changeme \
+  -X POST "http://localhost:7001/holonic/portals?tenant=acme" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "iri": "urn:portal:leon-to-crm",
+    "source": "https://id.indentia.ai/identity/person/acme/leon",
+    "target": "https://id.indentia.ai/identity/person/crm/leon",
+    "construct_query": "CONSTRUCT { ?s <http://crm/worksAt> ?o } WHERE { ?s <http://indentia.ai/core#worksAt> ?o }"
+  }'
+
+# List outbound portals from a holon
+curl -u root:changeme \
+  "http://localhost:7001/holonic/portals?tenant=acme&source=<url-encoded-source-iri>"
+```
+
+### Authentication + Authorization
+
+When an `AuthenticationService` is attached to the server:
+
+| Method | Required | Status when missing |
+|--------|----------|---------------------|
+| Anonymous on any `/holonic/*` | Authentication | `401 Unauthorized` |
+| `GET`, `HEAD` | `Permission::Read` | `403 Forbidden` |
+| `POST`, `PUT`, `PATCH`, `DELETE` | `Permission::Write` | `403 Forbidden` |
+| Write without `AuthorizationService` (but authn enabled) | Configured authz | `403 Forbidden` |
+
+Cross-tenant `?tenant=` values that do not match the actor's
+`org_scope.org_path` slug are logged under the `holonic.authz`
+tracing target but currently not blocked — blocking requires a
+canonical tenant claim on `Actor` which is a follow-up ADR.
+
+### Caveats
+
+- **Cluster mode is refused at startup** — holonic writes
+  bypass the Raft-routed `UpdateExecutor` path, which would
+  diverge from followers. Configure standalone mode for holonic
+  ingest.
+- **SPARQL `INSERT DATA` cannot carry `@prefix`** — the store's
+  custom `parse_into` decodes Turtle to N-Triples first.
+- The `/holonic/health` probe always responds, even when
+  holonic is disabled (503). Rely on status codes, not the
+  presence of the route, to distinguish "not mounted" from
+  "not configured".
+
+See [Holonic Four-Graph Layer](../features/holonic.md) for the
+conceptual model and deployment pattern.

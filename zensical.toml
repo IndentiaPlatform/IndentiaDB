@@ -40,6 +40,7 @@ nav = [
     { "Semantic Inference" = "features/inference.md" },
     { "Bitemporal Queries" = "features/bitemporal.md" },
     { "Geospatial" = "features/geospatial.md" },
+    { "Holonic Four-Graph Layer" = "features/holonic.md" },
     { "SHACL Validation" = "features/shacl.md" },
     { "Data Lineage" = "features/lineage.md" },
     { "Alerting Engine" = "features/alerting.md" },

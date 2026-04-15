@@ -44,6 +44,15 @@ OpenRaft consensus, leader election, automatic failover, and log compaction. Thr
 **Real-Time Reactive Queries**
 `LIVE SELECT` over WebSocket pushes results to clients the moment data changes. `DEFINE EVENT` triggers fire SurrealQL logic on record mutations — enabling reactive pipelines, alerting, and AI agent loops without polling.
 
+**35 Graph Algorithms**
+PageRank, Louvain, Betweenness, Dijkstra, A*, Bellman-Ford, K-Shortest Paths, Dinic Max Flow, Minimum Spanning Tree, and 26 more — all available via `POST /algo/:name` directly on the LPG projection of your data.
+
+**Locy Logic Programming**
+Datalog-with-Cypher-syntax rules for recursive inference over the LPG. Define transitive reachability, stratified negation, and FOLD aggregations in a few lines, evaluated bottom-up to fixpoint.
+
+**OpenCypher Mutations**
+`CREATE`, `MERGE`, `SET`, `DELETE` and `DETACH DELETE` in the LPG engine, plus `count()`, `sum()`, `avg()`, `collect()` aggregations in `RETURN` clauses.
+
 **RDFS/OWL Inference**
 Forward-chaining materialization with incremental updates. Entailed triples are stored and indexed like any other triple — queries over inferred knowledge are as fast as queries over asserted data.
 
@@ -128,10 +137,16 @@ curl -X POST http://localhost:9200/articles/_search \
   Architecture, data models, and core design decisions.
 
 - **[Query Languages](query-languages/index.md)**
-  SPARQL 1.2, SurrealQL, LPG, and hybrid query patterns.
+  SPARQL 1.2, SurrealQL, LPG, OpenCypher, Locy, and hybrid query patterns.
+
+- **[Graph Algorithms](features/graph-algorithms.md)**
+  35 algorithms: community detection, centrality, paths, flow, and more.
+
+- **[Locy Logic Programming](query-languages/locy.md)**
+  Recursive Datalog rules with Cypher syntax over the LPG projection.
 
 - **[Features](features/index.md)**
-  Enterprise search, RAG, inference, bitemporal, geospatial, and more.
+  Enterprise search, RAG, graph algorithms, inference, bitemporal, geospatial, and more.
 
 - **[Security](security/index.md)**
   Authentication, RBAC/ABAC, triple-level ACL, audit logging.
