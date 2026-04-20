@@ -207,6 +207,23 @@ body,
   max-width: 960px;
   margin: 0 auto;
 }
+
+@media screen and (max-width: 76.1875em) {
+  .md-content__inner {
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-content__inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .md-typeset h1 {
+    font-size: 1.75rem;
+  }
+}
 .md-typeset {
   font-size: 0.94rem;
   line-height: var(--leading-relaxed);
