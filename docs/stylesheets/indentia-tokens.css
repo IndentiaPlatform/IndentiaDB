@@ -1,0 +1,268 @@
+/* =============================================================
+ * Indentia Design System — Colors & Type
+ * =============================================================
+ * Brand: Indentia.ai — sovereign AI knowledge platform
+ * Philosophy: Bold, intelligent, energetic. Technological but
+ * accessible. Complex problems made simple.
+ * ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* ─────────── Brand Color ─────────── */
+  --indentia-teal: #059669;        /* Primary — innovation, growth, trust */
+  --indentia-teal-600: #047857;    /* Teal pressed / dark-on-light */
+  --indentia-teal-500: #059669;    /* alias of primary */
+  --indentia-teal-400: #10b981;    /* Teal on dark backgrounds */
+  --indentia-teal-300: #34d399;    /* Glow / secondary accent on dark */
+  --indentia-teal-100: #d1fae5;    /* Pale teal wash */
+  --indentia-teal-50:  #ecfdf5;    /* Lightest wash */
+
+  --indentia-cyan: #06b6d4;        /* Cyan accent — .ai, dynamism */
+  --indentia-cyan-400: #22d3ee;
+  --indentia-cyan-300: #67e8f9;
+  --indentia-cyan-100: #cffafe;
+
+  --indentia-ink: #0f172a;         /* Dark base — gravitas, hero */
+  --indentia-ink-800: #1e293b;
+  --indentia-ink-700: #334155;
+  --indentia-ink-600: #475569;
+
+  /* ─────────── Neutral Scale ─────────── */
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --white:     #ffffff;
+
+  /* ─────────── Semantic — Light UI ─────────── */
+  --bg:            var(--white);
+  --bg-subtle:     var(--slate-50);
+  --bg-muted:      var(--slate-100);
+  --bg-inverse:    var(--indentia-ink);
+
+  --fg1:           var(--slate-900);  /* primary text */
+  --fg2:           var(--slate-700);  /* secondary text */
+  --fg3:           var(--slate-500);  /* tertiary / meta */
+  --fg-inverse:    var(--white);
+  --fg-accent:     var(--indentia-teal);
+
+  --border:        var(--slate-200);
+  --border-strong: var(--slate-300);
+  --border-focus:  var(--indentia-teal);
+
+  /* ─────────── Semantic — Dark UI ─────────── */
+  --dark-bg:        var(--indentia-ink);
+  --dark-bg-subtle: var(--indentia-ink-800);
+  --dark-bg-muted:  var(--indentia-ink-700);
+  --dark-fg1:       var(--white);
+  --dark-fg2:       var(--slate-300);
+  --dark-fg3:       var(--slate-400);
+  --dark-border:    rgba(255, 255, 255, 0.08);
+  --dark-accent:    var(--indentia-teal-400);
+
+  /* ─────────── Status ─────────── */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --info:    var(--indentia-cyan);
+
+  /* ─────────── Signature Gradient ─────────── */
+  --gradient-signature: linear-gradient(135deg, #059669 0%, #06b6d4 100%);
+  --gradient-signature-soft: linear-gradient(135deg, rgba(5,150,105,0.12) 0%, rgba(6,182,212,0.12) 100%);
+  --gradient-hero-glow:
+    radial-gradient(60% 50% at 20% 20%, rgba(5,150,105,0.25) 0%, transparent 60%),
+    radial-gradient(50% 40% at 80% 30%, rgba(6,182,212,0.20) 0%, transparent 60%);
+
+  /* ─────────── Typography — Families ─────────── */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ─────────── Typography — Scale ─────────── */
+  --text-xs:   0.75rem;   /* 12 */
+  --text-sm:   0.875rem;  /* 14 */
+  --text-base: 1rem;      /* 16 */
+  --text-lg:   1.125rem;  /* 18 */
+  --text-xl:   1.25rem;   /* 20 */
+  --text-2xl:  1.5rem;    /* 24 */
+  --text-3xl:  1.875rem;  /* 30 */
+  --text-4xl:  2.25rem;   /* 36 */
+  --text-5xl:  3rem;      /* 48 */
+  --text-6xl:  3.75rem;   /* 60 */
+  --text-7xl:  4.5rem;    /* 72 */
+
+  /* ─────────── Tracking (display = tight) ─────────── */
+  --tracking-display: -0.02em;    /* -1px at 48px  */
+  --tracking-tight:   -0.025em;   /* big hero      */
+  --tracking-normal:  0em;
+  --tracking-wide:    0.08em;     /* eyebrows      */
+
+  /* ─────────── Line heights ─────────── */
+  --leading-tight:  1.1;
+  --leading-snug:   1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ─────────── Spacing (4px base) ─────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* ─────────── Radius (rounded, approachable) ─────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;   /* default cards */
+  --radius-xl: 20px;   /* hero + feature cards */
+  --radius-2xl: 28px;
+  --radius-pill: 9999px;
+
+  /* ─────────── Shadows (subtle, never harsh) ─────────── */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.08);
+  --shadow-teal-glow: 0 12px 40px rgba(5, 150, 105, 0.22);
+  --shadow-cyan-glow: 0 12px 40px rgba(6, 182, 212, 0.22);
+}
+
+/* =============================================================
+ * Semantic Type Tokens — use these, not raw scale vars
+ * ============================================================= */
+
+.display-1,
+.display-2,
+h1, h2, h3, h4,
+.eyebrow,
+.body,
+.body-lg,
+.body-sm,
+.caption,
+code, pre {
+  font-feature-settings: "ss01", "cv11";
+}
+
+.display-1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg1);
+}
+
+.display-2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg1);
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-4xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg1);
+}
+
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-3xl);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg1);
+}
+
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-snug);
+  letter-spacing: -0.01em;
+  color: var(--fg1);
+}
+
+h4, .h4 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+  color: var(--fg1);
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--indentia-teal);
+}
+
+.body-lg {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--fg2);
+}
+
+.body, p {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--fg2);
+}
+
+.body-sm {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--fg2);
+}
+
+.caption {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--fg3);
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  font-weight: 500;
+}
+
+/* .ai / cyan-accented inline tokens */
+.accent-cyan { color: var(--indentia-cyan); }
+.accent-teal { color: var(--indentia-teal); }
+.gradient-text {
+  background: var(--gradient-signature);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

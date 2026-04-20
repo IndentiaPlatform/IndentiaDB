@@ -1,0 +1,370 @@
+/* =============================================================
+ * IndentiaDB Docs — Brand Theme Override
+ * Maps the Indentia Design System tokens onto MkDocs Material /
+ * Zensical CSS custom properties. Token source of truth lives in
+ * indentia-tokens.css — do NOT duplicate hex values here.
+ * ============================================================= */
+
+/* ───────── Dark scheme (slate) — default ───────── */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        var(--indentia-teal);
+  --md-primary-fg-color--light:  var(--indentia-teal-400);
+  --md-primary-fg-color--dark:   var(--indentia-teal-600);
+  --md-primary-bg-color:         var(--white);
+  --md-primary-bg-color--light:  rgba(255,255,255,0.7);
+
+  --md-accent-fg-color:          var(--indentia-cyan);
+  --md-accent-fg-color--transparent: rgba(6,182,212,0.10);
+  --md-accent-bg-color:          var(--white);
+
+  --md-default-bg-color:         var(--indentia-ink);
+  --md-default-bg-color--light:  var(--indentia-ink-800);
+  --md-default-bg-color--lighter: var(--indentia-ink-700);
+  --md-default-fg-color:         var(--white);
+  --md-default-fg-color--light:  var(--slate-300);
+  --md-default-fg-color--lighter: var(--slate-400);
+  --md-default-fg-color--lightest: rgba(255,255,255,0.08);
+
+  --md-typeset-color:            var(--slate-300);
+  --md-typeset-a-color:          var(--indentia-cyan-300);
+
+  --md-code-bg-color:            #0b1224;
+  --md-code-fg-color:            #e2e8f0;
+  --md-code-hl-comment-color:    var(--slate-500);
+  --md-code-hl-keyword-color:    var(--indentia-cyan-400);
+  --md-code-hl-string-color:     var(--indentia-teal-300);
+  --md-code-hl-number-color:     #fbbf24;
+  --md-code-hl-function-color:   var(--indentia-cyan-300);
+  --md-code-hl-name-color:       var(--slate-200);
+  --md-code-hl-operator-color:   var(--slate-400);
+  --md-code-hl-punctuation-color: var(--slate-400);
+  --md-code-hl-variable-color:   var(--slate-200);
+  --md-code-hl-constant-color:   #fbbf24;
+  --md-code-hl-special-color:    var(--indentia-cyan-300);
+
+  --md-footer-bg-color:          var(--indentia-ink);
+  --md-footer-bg-color--dark:    #070c19;
+}
+
+/* ───────── Light scheme (default) ───────── */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:         var(--indentia-teal);
+  --md-primary-fg-color--light:  var(--indentia-teal-400);
+  --md-primary-fg-color--dark:   var(--indentia-teal-600);
+  --md-primary-bg-color:         var(--white);
+  --md-primary-bg-color--light:  rgba(255,255,255,0.7);
+
+  --md-accent-fg-color:          var(--indentia-cyan);
+  --md-accent-fg-color--transparent: rgba(6,182,212,0.10);
+  --md-accent-bg-color:          var(--white);
+
+  --md-typeset-a-color:          var(--indentia-teal);
+
+  --md-footer-bg-color:          var(--indentia-ink);
+  --md-footer-bg-color--dark:    #070c19;
+}
+
+/* ───────── Global typography ───────── */
+body,
+.md-typeset {
+  font-family: var(--font-body);
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+}
+
+.md-typeset h1 { font-size: 2.25rem; line-height: var(--leading-snug); }
+.md-typeset h2 { font-size: 1.5rem;  font-weight: 700; letter-spacing: -0.02em; }
+.md-typeset h3 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.01em; }
+.md-typeset h4 { font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; letter-spacing: 0; }
+
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd {
+  font-family: var(--font-mono);
+}
+
+/* ───────── Header ───────── */
+.md-header {
+  background: rgba(15,23,42,0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--dark-border);
+  box-shadow: none;
+  color: var(--white);
+}
+[data-md-color-scheme="default"] .md-header {
+  background: rgba(255,255,255,0.82);
+  color: var(--indentia-ink);
+  border-bottom: 1px solid var(--border);
+}
+.md-header__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 28px;
+  width: auto;
+}
+
+/* ───────── Tabs (top nav) ───────── */
+.md-tabs {
+  background: transparent;
+  border-bottom: 1px solid var(--dark-border);
+}
+[data-md-color-scheme="default"] .md-tabs {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+}
+.md-tabs__link {
+  font-size: 0.82rem;
+  font-weight: 500;
+  opacity: 0.75;
+  margin-top: 0.6rem;
+}
+.md-tabs__link--active,
+.md-tabs__link:hover {
+  opacity: 1;
+  color: var(--indentia-teal-300);
+}
+[data-md-color-scheme="default"] .md-tabs__link--active,
+[data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: var(--indentia-teal);
+}
+
+/* ───────── Left navigation ───────── */
+.md-nav__title {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dark-fg3);
+}
+[data-md-color-scheme="default"] .md-nav__title { color: var(--fg3); }
+
+.md-nav__link {
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 0.82rem;
+}
+.md-nav__link:hover {
+  background: rgba(255,255,255,0.04);
+}
+[data-md-color-scheme="default"] .md-nav__link:hover {
+  background: var(--bg-muted);
+}
+.md-nav__link--active {
+  background: rgba(5,150,105,0.12);
+  color: var(--indentia-teal-300) !important;
+  font-weight: 600;
+  border-left: 2px solid var(--indentia-teal-400);
+}
+[data-md-color-scheme="default"] .md-nav__link--active {
+  background: var(--indentia-teal-50);
+  color: var(--indentia-teal) !important;
+  border-left-color: var(--indentia-teal);
+}
+
+/* ───────── Article body ───────── */
+.md-content__inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.md-typeset {
+  font-size: 0.94rem;
+  line-height: var(--leading-relaxed);
+}
+.md-typeset p { color: var(--slate-300); }
+[data-md-color-scheme="default"] .md-typeset p { color: var(--fg2); }
+.md-typeset strong { color: var(--white); font-weight: 600; }
+[data-md-color-scheme="default"] .md-typeset strong { color: var(--fg1); }
+
+/* Inline code */
+.md-typeset :not(pre) > code {
+  background: rgba(255,255,255,0.08);
+  color: var(--indentia-cyan-300);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+}
+[data-md-color-scheme="default"] .md-typeset :not(pre) > code {
+  background: var(--slate-100);
+  color: var(--indentia-teal-600);
+}
+
+/* Code blocks */
+.md-typeset pre > code,
+.highlight pre {
+  border-radius: var(--radius-md);
+}
+.md-typeset .highlight {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--dark-border);
+}
+[data-md-color-scheme="default"] .md-typeset .highlight {
+  border: 1px solid var(--border);
+  background: var(--slate-50);
+}
+
+/* Links */
+.md-typeset a {
+  color: var(--indentia-cyan-300);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms ease-out;
+}
+[data-md-color-scheme="default"] .md-typeset a { color: var(--indentia-teal); }
+.md-typeset a:hover { border-bottom-color: currentColor; }
+
+/* ───────── Admonitions ───────── */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: var(--radius-md);
+  border-left-width: 3px;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.88rem;
+}
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.md-typeset .admonition.success,
+.md-typeset details.success {
+  border-left-color: var(--indentia-teal-400);
+  background: rgba(5,150,105,0.10);
+}
+.md-typeset .admonition.tip,
+.md-typeset details.tip,
+.md-typeset .admonition.info,
+.md-typeset details.info,
+.md-typeset .admonition.note,
+.md-typeset details.note {
+  border-left-color: var(--indentia-cyan);
+  background: rgba(6,182,212,0.08);
+}
+.md-typeset .admonition.warning,
+.md-typeset details.warning {
+  border-left-color: #f59e0b;
+  background: rgba(245,158,11,0.08);
+}
+
+/* ───────── Tables ───────── */
+.md-typeset table:not([class]) {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--dark-border);
+  font-size: 0.85rem;
+}
+[data-md-color-scheme="default"] .md-typeset table:not([class]) {
+  border: 1px solid var(--border);
+}
+.md-typeset table:not([class]) th {
+  background: rgba(255,255,255,0.03);
+  color: var(--dark-fg2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th {
+  background: var(--bg-subtle);
+  color: var(--fg2);
+}
+
+/* ───────── Buttons ───────── */
+.md-typeset .md-button {
+  background: var(--gradient-signature);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  padding: 0.6rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+.md-typeset .md-button:hover {
+  box-shadow: var(--shadow-teal-glow);
+  transform: translateY(-1px);
+}
+.md-typeset .md-button:active {
+  transform: scale(0.98);
+  box-shadow: var(--shadow-xs);
+}
+.md-typeset .md-button--primary {
+  background: var(--gradient-signature);
+  color: var(--white);
+}
+
+/* ───────── Search ───────── */
+.md-search__form {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--dark-border);
+  border-radius: var(--radius-md);
+}
+[data-md-color-scheme="default"] .md-search__form {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+}
+.md-search__input {
+  font-family: var(--font-body);
+}
+.md-search__input::placeholder { color: var(--dark-fg3); }
+
+/* ───────── Focus ring ───────── */
+.md-content a:focus-visible,
+.md-nav__link:focus-visible,
+.md-tabs__link:focus-visible,
+.md-search__input:focus,
+.md-typeset .md-button:focus-visible {
+  outline: 2px solid var(--indentia-teal);
+  outline-offset: 2px;
+}
+
+/* ───────── Hero accent strip (optional: decorate h1 with gradient underline) ───────── */
+.md-typeset h1 {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+.md-typeset h1::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 64px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-signature);
+}
+
+/* ───────── Footer ───────── */
+.md-footer-meta {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+}
+
+/* ───────── Scrollbar (dark) ───────── */
+[data-md-color-scheme="slate"] ::-webkit-scrollbar {
+  width: 8px; height: 8px;
+}
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.10);
+  border-radius: var(--radius-pill);
+}
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}

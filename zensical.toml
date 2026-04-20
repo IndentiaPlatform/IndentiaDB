@@ -5,7 +5,11 @@ site_url = "https://dbdocs.indentia.ai"
 repo_url = "https://github.com/IndentiaPlatform/IndentiaDB"
 repo_name = "IndentiaPlatform/IndentiaDB"
 edit_uri = ""
-extra_css = ["stylesheets/nlweb-chat.css"]
+extra_css = [
+  "stylesheets/indentia-tokens.css",
+  "stylesheets/indentia-brand.css",
+  "stylesheets/nlweb-chat.css",
+]
 extra_javascript = ["javascripts/nlweb-chat.js"]
 
 nav = [
@@ -83,8 +87,8 @@ nav = [
 # Theme
 [project.theme]
 variant = "classic"
-logo = "assets/logo.png"
-favicon = "assets/logo.png"
+logo = "assets/logo-horizontal.png"
+favicon = "assets/logo-mark.png"
 features = [
   "navigation.tabs",
   "navigation.tabs.sticky",
@@ -105,24 +109,25 @@ features = [
 [project.theme.font]
 text = "Inter"
 code = "JetBrains Mono"
+# Display font (Space Grotesk) is loaded via stylesheets/indentia-tokens.css
 
 [project.theme.icon]
 repo = "fontawesome/brands/github"
 
 [[project.theme.palette]]
 scheme = "slate"
-primary = "indigo"
+primary = "teal"
 accent = "cyan"
 [project.theme.palette.toggle]
-icon = "lucide/moon"
+icon = "lucide/sun"
 name = "Switch to light mode"
 
 [[project.theme.palette]]
 scheme = "default"
-primary = "indigo"
+primary = "teal"
 accent = "cyan"
 [project.theme.palette.toggle]
-icon = "lucide/sun"
+icon = "lucide/moon"
 name = "Switch to dark mode"
 
 # Extra
