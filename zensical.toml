@@ -5,6 +5,7 @@ site_url = "https://dbdocs.indentia.ai"
 repo_url = "https://github.com/IndentiaPlatform/IndentiaDB"
 repo_name = "IndentiaPlatform/IndentiaDB"
 edit_uri = ""
+copyright = "(C) Copyright Indentia B.V. - Chamber of Commerce number 42041967 - The Netherlands"
 extra_css = [
   "stylesheets/indentia-tokens.css",
   "stylesheets/indentia-brand.css",

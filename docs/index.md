@@ -109,7 +109,7 @@ curl -X POST http://localhost:7001/sparql \
   -d 'SELECT ?name WHERE { ?p <http://xmlns.com/foaf/0.1/name> ?name }'
 ```
 
-### First Elasticsearch-compatible Search
+### ES-compatible Search
 
 ```bash
 # Index a document
