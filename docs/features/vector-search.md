@@ -1,6 +1,6 @@
 # Vector Search & RAG
 
-IndentiaDB ships a native vector index (HNSW *and* IVF) with first-class support for retrieval-augmented generation (RAG) pipelines. Vectors are stored, indexed, and queried within the same ACID transaction boundary as all other data models — no separate vector database required.
+IndentiaDB ships a native vector index with two backends — an **in-memory HNSW/IVF engine** for sub-millisecond recall up to ~500K vectors, and a **disk-backed DiskIVF engine** that scales to 100M+ vectors with 194× less RAM through scalar quantization. Both backends share the same SPARQL, SurrealQL, and LPG query interfaces and live within the same ACID transaction boundary as all other data models — no separate vector database required.
 
 ## What is and isn't automatic
 
@@ -76,6 +76,120 @@ ef_construction     = 200    # candidate list size during build
 
 !!! tip "Dimension Must Match Your Embedding Model"
     `all-MiniLM-L6-v2` produces 384-dimensional vectors. `all-mpnet-base-v2` produces 768. `text-embedding-ada-002` produces 1536. Set `dimension` to match exactly — a mismatch causes an error at insert time.
+
+---
+
+## DiskIVF — Disk-Backed Vector Index
+
+### What DiskIVF Is
+
+DiskIVF is IndentiaDB's disk-backed vector index with scalar quantization. While the standard `persistent` engine holds all vectors in RAM, DiskIVF stores quantized posting lists on the SurrealKV/TiKV storage backend — reducing RAM usage by up to **194×** at 100M vectors.
+
+This makes it the right choice for corpora that exceed what fits comfortably in memory: enterprise document archives, long-horizon conversation histories, multi-tenant platforms, or any corpus in the tens-to-hundreds of millions of vectors.
+
+### Persistent vs. DiskIVF — When to Use Which
+
+| Criteria | Persistent (in-memory) | DiskIVF (disk-backed) |
+|----------|------------------------|-----------------------|
+| Corpus size | Up to ~500K vectors | 10M – 100M+ vectors |
+| RAM at 100M vectors | ~583 GB | ~3 GB + ~3 GB (ID maps) |
+| Disk at 100M vectors | — | ~28 GB (1-bit quantization) |
+| Recall@10 | 97–99% | 90–99% (tunable via bit depth) |
+| Build requirement | Immediate | Training phase (≥ `LISTS × 39` sample vectors) |
+| Query latency | Sub-millisecond | 1–10 ms (cache-dependent) |
+| SOAR boundary recall | — | ✅ Soft dual-centroid assignment |
+
+### Architecture
+
+DiskIVF uses a three-tier layout:
+
+```
+┌──────────────────────────────────────────────┐
+│  Centroids  (RAM)                             │
+│  k-means cluster centers — always in memory   │
+│  ≈100 centroids × dimension × 4 bytes        │
+└──────────────────┬───────────────────────────┘
+                   │  score all centroids → pick top n_probe
+┌──────────────────▼───────────────────────────┐
+│  LRU Cache  (RAM)                             │
+│  32 most-recently-used posting lists          │
+│  configurable via CACHE_SIZE                  │
+└──────────────────┬───────────────────────────┘
+                   │  cache miss → fetch from storage
+┌──────────────────▼───────────────────────────┐
+│  Posting Lists  (Disk / SurrealKV / TiKV)    │
+│  Scalar-quantized vectors: 1 / 2 / 4 bits    │
+│  Written via InvertedListStore abstraction    │
+└──────────────────────────────────────────────┘
+```
+
+Search uses **asymmetric distance scoring**: the query vector stays at full `f32` precision while only stored vectors are quantized. This gives materially better recall than symmetric quantization (where the query is also compressed).
+
+### Enabling DiskIVF
+
+Add `ENGINE diskivf` to the `CREATE VECTOR INDEX` DDL statement. All existing query syntax — `vec:approxNearCosine`, SurrealQL `<|k,ef|>`, LPG `VectorKnn` — works unchanged; the engine type is transparent at query time.
+
+**Minimal:**
+
+```sparql
+CREATE VECTOR INDEX doc_embeddings
+  ON <http://example.org/Document>
+  FIELD <http://example.org/embedding>
+  METRIC cosine
+  DIMENSION 1536
+  LISTS 100
+  ENGINE diskivf;
+```
+
+**Fully tuned:**
+
+```sparql
+CREATE VECTOR INDEX doc_embeddings
+  ON <http://example.org/Document>
+  FIELD <http://example.org/embedding>
+  METRIC cosine
+  DIMENSION 1536
+  LISTS 100
+  ENGINE diskivf
+  CACHE_SIZE 64
+  QUANTIZATION_BITS 2
+  SOAR true
+  SOAR_THRESHOLD 1.3;
+```
+
+### Configuration Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ENGINE` | `persistent` \| `diskivf` | `persistent` | Index backend. `diskivf` enables disk-backed storage with scalar quantization |
+| `LISTS` | integer | `100` | Number of IVF coarse clusters. Rule of thumb: `sqrt(N)` |
+| `CACHE_SIZE` | integer | `32` | Posting lists held in RAM LRU cache. Increase for hot-path workloads |
+| `QUANTIZATION_BITS` | `1` \| `2` \| `4` | `1` | Bits per dimension. Lower = smaller footprint, lower recall |
+| `SOAR` | boolean | `true` | Soft Overlapping Assignment — assigns boundary vectors to two centroids to recover recall at cluster edges |
+| `SOAR_THRESHOLD` | float | `1.3` | Distance ratio for dual-centroid assignment. `1.0` disables SOAR; higher values assign more vectors to two clusters |
+
+### Quantization Trade-offs
+
+| Bits | Compression | Bytes/vector (1536-dim) | Recall@10 | Recommended for |
+|------|-------------|-------------------------|-----------|-----------------|
+| **1** | ~28× | ~216 B | 90–95% | 50M+ vectors, RAM-critical environments |
+| **2** | ~14× | ~408 B | 95–98% | 10–50M vectors, balanced workloads |
+| **4** | ~7× | ~792 B | 98–99% | Accuracy-sensitive, smaller corpora |
+
+### Capacity Planning
+
+| Corpus | Disk (1-bit) | RAM (centroids + cache) | RAM (ID maps) |
+|--------|-------------|-------------------------|---------------|
+| 10K vectors | ~2.8 MB | ~2 MB | negligible |
+| 1M vectors | ~280 MB | ~20 MB | ~30 MB |
+| 10M vectors | ~2.8 GB | ~45 MB | ~300 MB |
+| 100M vectors | ~28 GB | ~90 MB | ~3 GB |
+
+!!! warning "Training Required Before First Search"
+    DiskIVF must be trained before accepting queries. Training fits `LISTS` k-means centroids on a representative sample — at minimum `LISTS × 39` vectors (e.g. 3,900 vectors for `LISTS 100`). Training runs automatically during `BUILD VECTOR INDEX` and is a one-time cost per index. Calling search on an untrained index returns `AnnError::NotTrained`.
+
+!!! tip "SOAR: Recovering Recall at Cluster Boundaries"
+    Vectors near centroid boundaries are the most likely to be missed when `n_probe` is low. SOAR (Soft Overlapping Assignment) solves this by dual-assigning each such vector to its two nearest centroids at build time. At the default threshold of `1.3`, a vector is dual-assigned when its second-nearest centroid is within 1.3× the distance of the nearest. This slightly increases index size but recovers boundary recall without raising `n_probe`.
 
 ---
 
@@ -252,7 +366,9 @@ DROP VECTOR INDEX docs_emb;
 
 `METRIC` accepts `cosine`, `l2`, or `inner_product`. `DIMENSION` must match the
 embedding-model output exactly. `LISTS` controls IVF coarse-cluster count
-(rule of thumb: `sqrt(N)`); HNSW indexes ignore this parameter.
+(rule of thumb: `sqrt(N)`). Add `ENGINE diskivf` to switch from in-memory to
+disk-backed storage — see [DiskIVF](#diskivf-disk-backed-vector-index) for the
+full parameter reference and capacity planning guide.
 
 ---
 

@@ -12,6 +12,8 @@ Modern AI and enterprise applications require multiple data paradigms simultaneo
 
 IndentiaDB eliminates that complexity.
 
+Indentia is the database where storage, context, and memory are one transaction, regardless of data structure.
+
 !!! success "One binary. Five data models. Zero compromises."
     ACID transactions span all five models simultaneously. A single SPARQL query can join RDF triples with vector similarity results and full-text BM25 scores — without ETL, without data duplication, without distributed transactions across separate systems.
 
@@ -34,6 +36,15 @@ Drop the ES client into your existing stack and point it at port 9200. IndentiaD
 
 **Bayesian Hybrid Search**
 BM25 full-text + HNSW dense vector search fused with Bayesian probability calibration. Outperforms Reciprocal Rank Fusion (RRF) at NDCG@10: **0.9149 vs 0.8874** on SQuAD benchmarks.
+
+**Disk-Backed Vectors — Scale to 100M+**
+The new DiskIVF engine persists scalar-quantized posting lists to the storage backend (SurrealKV/TiKV) while keeping only cluster centroids and a configurable LRU cache in RAM. RAM usage at 100M vectors drops from ~583 GB (in-memory) to ~3 GB — a **194× reduction** — while asymmetric distance scoring keeps recall competitive. Enable with a single parameter in the vector index DDL:
+
+```sparql
+CREATE VECTOR INDEX doc_embeddings ON ex:Document
+  FIELD ex:embedding METRIC cosine DIMENSION 1536
+  ENGINE diskivf QUANTIZATION_BITS 2;
+```
 
 **Triple-Level Security**
 The only database with ACL policies embedded directly in RDF-star quoted triples. Combine LDAP/OIDC/JWT authentication with RBAC/ABAC authorization and per-triple access control — including Windows SID support for Active Directory integration.
