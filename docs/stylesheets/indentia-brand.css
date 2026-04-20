@@ -46,16 +46,19 @@
   --md-footer-bg-color--dark:    #070c19;
 }
 
-/* ───────── Light scheme (default) ───────── */
+/* ───────── Light scheme (default) ─────────
+ * Header + tabs are white with backdrop-blur (see .md-header override below),
+ * so foreground text on the primary surface must be ink, not white.
+ */
 [data-md-color-scheme="default"] {
   --md-primary-fg-color:         var(--indentia-teal);
   --md-primary-fg-color--light:  var(--indentia-teal-400);
   --md-primary-fg-color--dark:   var(--indentia-teal-600);
-  --md-primary-bg-color:         var(--white);
-  --md-primary-bg-color--light:  rgba(255,255,255,0.7);
+  --md-primary-bg-color:         var(--indentia-ink);
+  --md-primary-bg-color--light:  var(--slate-700);
 
-  --md-accent-fg-color:          var(--indentia-cyan);
-  --md-accent-fg-color--transparent: rgba(6,182,212,0.10);
+  --md-accent-fg-color:          var(--indentia-teal);
+  --md-accent-fg-color--transparent: rgba(5,150,105,0.10);
   --md-accent-bg-color:          var(--white);
 
   --md-typeset-a-color:          var(--indentia-teal);
@@ -105,6 +108,15 @@ body,
   color: var(--indentia-ink);
   border-bottom: 1px solid var(--border);
 }
+[data-md-color-scheme="default"] .md-header,
+[data-md-color-scheme="default"] .md-header__title,
+[data-md-color-scheme="default"] .md-header__topic,
+[data-md-color-scheme="default"] .md-header-nav__button,
+[data-md-color-scheme="default"] .md-header__button,
+[data-md-color-scheme="default"] .md-header a {
+  color: var(--indentia-ink);
+}
+[data-md-color-scheme="default"] .md-header__button svg { fill: currentColor; }
 .md-header__title {
   font-family: var(--font-display);
   font-weight: 600;
@@ -122,8 +134,12 @@ body,
   border-bottom: 1px solid var(--dark-border);
 }
 [data-md-color-scheme="default"] .md-tabs {
-  background: transparent;
+  background: rgba(255,255,255,0.82);
+  color: var(--indentia-ink);
   border-bottom: 1px solid var(--border);
+}
+[data-md-color-scheme="default"] .md-tabs__link {
+  color: var(--indentia-ink);
 }
 .md-tabs__link {
   font-size: 0.82rem;
