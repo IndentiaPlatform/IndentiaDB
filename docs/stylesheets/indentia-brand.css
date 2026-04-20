@@ -61,6 +61,17 @@
   --md-accent-fg-color--transparent: rgba(5,150,105,0.10);
   --md-accent-bg-color:          var(--white);
 
+  /* Explicit bg/fg tokens — prevents dark-scheme values from leaking into
+     light mode and painting sidebar labels white-on-white. */
+  --md-default-bg-color:         var(--white);
+  --md-default-bg-color--light:  var(--slate-50);
+  --md-default-bg-color--lighter: var(--slate-100);
+  --md-default-fg-color:         var(--fg1);
+  --md-default-fg-color--light:  var(--fg2);
+  --md-default-fg-color--lighter: var(--fg3);
+  --md-default-fg-color--lightest: var(--slate-200);
+
+  --md-typeset-color:            var(--fg1);
   --md-typeset-a-color:          var(--indentia-teal);
 
   --md-footer-bg-color:          var(--indentia-ink);
@@ -383,4 +394,18 @@ body,
 }
 [data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.18);
+}
+
+/* ───────── Nav label legibility (belt-and-braces) ─────────
+ * Sidebar section labels ("Getting Started", "Concepts", …) are rendered as
+ * <label class="md-nav__link"> toggles. Force explicit colors in both schemes
+ * so a future Material upgrade can't make them invisible again.
+ */
+[data-md-color-scheme="default"] .md-nav__link,
+[data-md-color-scheme="default"] .md-nav .md-nav__title {
+  color: var(--fg1);
+}
+[data-md-color-scheme="slate"] .md-nav__link,
+[data-md-color-scheme="slate"] .md-nav .md-nav__title {
+  color: var(--white);
 }
