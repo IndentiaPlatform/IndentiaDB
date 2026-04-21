@@ -353,3 +353,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+## Ownership and licence status
+
+Indentia-authored original code and additions are owned by Indentia B.V., while use is governed by the applicable `LICENSE` files. See `NOTICE` or `INDENTIA_NOTICE.md` and `OWNERSHIP.md`.
